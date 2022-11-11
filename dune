@@ -1,0 +1,9 @@
+(ocamllex
+ (modules lexer))
+
+(menhir
+ (flags --explain --dump)
+ (modules parser))
+
+(executable
+ (name petitc))

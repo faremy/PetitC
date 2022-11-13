@@ -6,4 +6,5 @@
  (modules parser))
 
 (executable
- (name petitc))
+ (name petitc)
+ (flags -w A))

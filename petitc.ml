@@ -35,15 +35,15 @@ let () =
   let c = open_in file in
   let lb = Lexing.from_channel c in
 
-  let rec dumb_parser () =
+  (* let rec dumb_parser () =
     match (Lexer.token lb) with
     | Parser.EOF -> ()
-    | t -> if (!Lexer.nl) then printf "\n"; printf "%s " (Util.token_to_string t); dumb_parser () in
+    | t -> if (!Lexer.nl) then printf "\n"; printf "%s " (Util.token_to_string t); dumb_parser () in *)
   
   try
-    dumb_parser ();
-    (* let f = Parser.file tok in  *)
-    (* Format.printf "%a@." pp_file f;  *)
+    (* dumb_parser () *)
+    let arbre = Parser.prog Lexer.token lb in
+    Format.printf "%a@." pp_prog arbre;
     if !parse_only then exit 0;
     (*Interp.file f*)
   with

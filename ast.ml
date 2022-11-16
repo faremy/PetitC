@@ -1,1 +1,0 @@
-type loc = { line: int; lcol: int; rcol: int }

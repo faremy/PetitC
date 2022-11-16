@@ -38,7 +38,8 @@ let () =
   let rec dumb_parser () =
     match (Lexer.token lb) with
     | Parser.EOF -> ()
-    | _ -> eprintf "token parse\n"; dumb_parser () in
+    | t -> if (!Lexer.nl) then print_newline(); Format.printf "%s " (Util.token_to_string t); dumb_parser () in
+  
   try
     dumb_parser ();
     (* let f = Parser.file tok in  *)

@@ -1,6 +1,13 @@
 type loc = Lexing.position * Lexing.position
 
-and typ = Void | Int | Bool | Pointer of typ
+let pp_loc fmt (l : loc) =
+  let (b, e) = l in
+  let l = b.pos_lnum in
+  let fc = b.pos_cnum - b.pos_bol + 1 in
+  let lc = e.pos_cnum - b.pos_bol + 1 in
+  Format.fprintf fmt "l%d c%d-%d" l fc lc
+
+type typ = Void | Int | Bool | Pointer of typ
 and const = IntCst of int | BoolCst of bool | Null
 
 and unop = Incr of bool | Decr of bool | Amp | Not | Deref
@@ -36,3 +43,12 @@ and stmt_desc =
 and stmt = { sdesc: stmt_desc; sloc: loc }
 
 and prog = decl_fct list
+[@@deriving show]
+
+let dummy_loc = Lexing.dummy_pos, Lexing.dummy_pos
+
+let dummy_stmt desc =
+  {sdesc = desc; sloc = dummy_loc}
+
+let dummy_expr desc =
+  {edesc = desc; eloc = dummy_loc}

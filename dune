@@ -7,4 +7,5 @@
 
 (executable
  (name petitc)
+ (preprocess (pps ppx_deriving.show ppx_deriving.ord))
  (flags -w A-4))

@@ -1,7 +1,6 @@
 {
 	open Lexing
 	open Parser
-	open Ast
 
 	exception Lexing_Error of string
 
@@ -17,11 +16,11 @@ rule token = parse
 |	'\n' { new_line lexbuf; nl := true; token lexbuf }
 |	space { token lexbuf }
 |	"//" { l_comment lexbuf }
-|	"/*" { comment  lexbuf }
+|	"/*" { comment lexbuf }
 |	'#' {
 	if not !nl then
 		raise (Lexing_Error ("stray '#' in program"));
-	read_include l lexbuf
+	read_include lexbuf
 }
 
 |	',' { nl := false; COMMA }
@@ -87,13 +86,13 @@ rule token = parse
 |	('_' | alpha) ('_' | alpha | digits)* as s { nl := false; IDENT s }
 
 |	eof { EOF }
-|	_ as c { raise (Lexing_Error ("illegal character")) }
+|	_ { raise (Lexing_Error ("illegal character")) }
 and l_comment = parse
 |	'\n' { new_line lexbuf; nl := true; token lexbuf }
 |	eof { EOF }
 |	_ { l_comment lexbuf }
 and comment = parse
-|	'\n' { new_line lexbuf; comment start lexbuf }
+|	'\n' { new_line lexbuf; comment lexbuf }
 	(* gcc ne prend pas en compte les retours à la ligne dans les commentaires (pas besoin de modifier nl) *)
 |	eof { raise (Lexing_Error ("unfinished comment")) }
 |	"*/" { token lexbuf }

@@ -1,4 +1,5 @@
-type loc = Lexing.position * Lexing.position
+open Lexing
+type loc = position * position
 
 let pp_loc fmt (l : loc) =
   let (b, e) = l in

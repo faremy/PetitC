@@ -7,4 +7,4 @@
 
 (executable
  (name petitc)
- (flags -w A))
+ (flags -w A-4))

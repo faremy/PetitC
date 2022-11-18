@@ -31,6 +31,8 @@
 %left LT, LE, GT, GE
 %left PLUS, MINUS
 %left MUL, DIV, MOD
+%right AMP, NOT, PPLUS, MMINUS
+%nonassoc LSQR
 
 %type<Ast.prog> prog
 %start prog
@@ -89,7 +91,7 @@ expr:
 |	e = expr_desc { { edesc = e; eloc = $loc } }
 
 %inline block:
-|	b = list(decl) { b }
+|	LBRA b = list(decl) RBRA { b }
 decl_var:
 |	v = var { (v, None) }
 |	v = var; ASSIGN; e = expr { (v, Some e) }

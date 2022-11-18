@@ -2,8 +2,9 @@
  (modules lexer))
 
 (menhir
+ (modules parser)
  (flags --explain --dump)
- (modules parser))
+ (infer true))
 
 (executable
  (name petitc)

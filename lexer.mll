@@ -98,6 +98,6 @@ and comment = parse
 |	"*/" { token lexbuf }
 |	_ { comment lexbuf }
 and read_include = parse
-|	"include" space* '<' ((char # '>')* as f) '>' space* '\n' { INCLUDE f }
+|	"include" space* '<' ((char # '>')* as f) '>' space* '\n' { new_line lexbuf; INCLUDE f }
 |	"include" space* { raise (Lexing_Error ("invalid include argument")) }
 |	_ { raise (Lexing_Error ("stray '#' in program")) }

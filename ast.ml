@@ -34,9 +34,10 @@ and expr_desc =
 and expr = { edesc: expr_desc; eloc: loc }
 
 and stmt_desc =
+| Dummy (* un ; seul *)
 | Expr of expr
 | Block of decl list
-| Cond of expr * stmt * stmt
+| Cond of expr * stmt * stmt (* pas de else = dummy *)
 | While of expr * stmt
 | Return of expr option
 | Break

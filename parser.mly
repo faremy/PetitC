@@ -90,6 +90,12 @@ expr_desc:
 expr:
 |	e = expr_desc { { edesc = e; eloc = $loc } }
 
+stmt_desc:
+|	SEMICOLON { Dummy }
+|	e = expr; SEMICOLON { Expr e }
+stmt:
+|	s = stmt_desc { {sdesc = s; sloc = $loc }}
+
 %inline block:
 |	LBRA b = list(decl) RBRA { b }
 decl_var:
@@ -98,7 +104,8 @@ decl_var:
 decl_fct:
 |	f = var; LPAR; arg = separated_list(COMMA, var); RPAR; b = block { (f, arg, b) }
 decl:
-|	d = decl_var { Var d }
+|	d = decl_var; SEMICOLON { Var d }
+|	s = stmt { Stmt s }
 
 incl:
 |	s = INCLUDE { s }

@@ -45,7 +45,7 @@ and stmt_desc =
 and stmt = { sdesc: stmt_desc; sloc: loc }
 
 and prog = decl_fct list
-[@@deriving show]
+[@@deriving show {with_path = false}]
 
 let dummy_loc = Lexing.dummy_pos, Lexing.dummy_pos
 

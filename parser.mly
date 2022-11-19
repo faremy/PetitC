@@ -93,6 +93,9 @@ expr:
 stmt_desc:
 |	SEMICOLON { Dummy }
 |	e = expr; SEMICOLON { Expr e }
+|	IF; LPAR; e = expr; RPAR; s1 = stmt { Cond (e, s1, dummy_stmt Dummy) }
+|	IF; LPAR; e = expr; RPAR; s1 = stmt; ELSE; s2 = stmt { Cond (e, s1, s2) }
+
 stmt:
 |	s = stmt_desc { {sdesc = s; sloc = $loc }}
 

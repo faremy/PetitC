@@ -9,7 +9,17 @@ let pp_loc fmt (l : loc) =
   Format.fprintf fmt "l%d c%d-%d" l fc lc
 
 type typ = Void | Int | Bool | Pointer of typ
-and const = IntCst of int | BoolCst of bool | Null
+
+let rec typ_str = function
+  | Void -> "void"
+  | Int -> "int"
+  | Bool -> "bool"
+  | Pointer tau -> (typ_str tau) ^ "*"
+
+let pp_typ fmt (tau : typ) =
+  Format.fprintf fmt "%s" (typ_str tau)
+
+type const = IntCst of int | BoolCst of bool | Null
 
 and unop = Incr of bool | Decr of bool | Amp | Not | Deref
 (* Le booléen indique s'il faut renvoyer la valeur après [1] ou avant [0] incrémentation *)
@@ -82,9 +92,3 @@ let make_dv (v, e, lc) = {
   dv_init = e;
   dv_loc = lc
 }
-
-let rec typ_str = function
-  | Void -> "void"
-  | Int -> "int"
-  | Bool -> "bool"
-  | Pointer tau -> (typ_str tau) ^ "*"

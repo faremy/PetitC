@@ -12,9 +12,9 @@ let lvalue = function
 | _ -> false
 
 
-let type_expr (var_env : venv) (fct_env : fenv) e = 
+let type_expr var_env fct_env e = 
   let fail msg =
-    raise Typing_Error (e.e_loc, msg) in
+    raise (Typing_Error (e.eloc, msg)) in
   
   match e.edesc with
   | Const Null -> { t_edesc = T_Const Null; etyp = Void }
@@ -25,5 +25,5 @@ let type_expr (var_env : venv) (fct_env : fenv) e =
     with Not_found -> fail (Format.sprintf "variable %s is undefined" s)
   end
   | Sizeof Void -> fail "void has no size"
-  | Sizeof t -> { t_edesc = T_Sizeof t; Int }
+  | Sizeof t -> { t_edesc = T_Sizeof t; etyp = Int}
   | _ -> fail "cas non gere"

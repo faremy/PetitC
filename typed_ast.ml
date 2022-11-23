@@ -5,7 +5,7 @@ type ftyp = {
   args: typ list
 }
 
-type t_decl_fct = {
+and t_decl_fct = {
   df_ret: typ;
   df_id: string;
   df_args: var list;

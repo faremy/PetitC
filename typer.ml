@@ -11,6 +11,12 @@ let lvalue e = match e.edesc with
 | Unop (Deref, _) -> true
 | _ -> false
 
+let equiv = function
+  | t1, t2 when t1 = t2 -> true (* réflexive *)
+  | Int, Bool | Bool, Int -> true (* int = bool *)
+  | Pointer t1, Pointer t2 when (t1 = Void || t2 = Void) -> true (* void* = t* *)
+  | _ -> false
+
 
 let type_expr var_env fct_env =
   let rec aux typing =

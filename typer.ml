@@ -36,6 +36,19 @@ let type_expr var_env fct_env =
     | Sizeof t -> { t_edesc = T_Sizeof t; etyp = Int}
 
     (* Pointeur : amp et deref *)
+    | Unop(Amp, e_raw) -> begin
+        require_lval e_raw "lvalue required as unary '&' operand";
+        let e_ty = aux e_raw in
+        {t_edesc = T_Unop(Amp, e_ty); etyp = Pointer e_ty.etyp}
+      end
+
+    | Unop(Deref, e_raw) -> begin
+        let e_ty = aux e_raw in
+        match (e_ty.etyp) with
+          | Pointer tau -> {t_edesc = T_Unop(Deref, e_ty); etyp = tau}
+          | tau -> fail (Format.sprintf "invalid type argument of unary '*' (have '%s')" (typ_str tau))
+      end
+
     (* Assignation lv = rv, ex. x = (y = 2) *)
     (* Unop sur lvalue *)
     (* Unop numérique *)

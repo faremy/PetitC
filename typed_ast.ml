@@ -37,3 +37,6 @@ and t_stmt =
 | Continue
 
 and t_prog = t_decl_fct list
+
+let make_te (desc, tau) =
+  { t_edesc = desc; etyp = tau }

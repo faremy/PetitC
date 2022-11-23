@@ -1,5 +1,9 @@
 open Ast
 
+type ftyp = {
+  ret: typ;
+  args: typ list
+}
 
 type t_decl_fct = {
   df_ret: typ;
@@ -21,7 +25,7 @@ and t_expr_desc =
 | T_Binop of binop * t_expr * t_expr
 | T_Assign of t_expr * t_expr
 | T_Sizeof of typ
-and t_expr = { edesc: t_expr_desc; etyp: typ }
+and t_expr = { t_edesc: t_expr_desc; etyp: typ }
 
 and t_stmt =
 | T_Expr of t_expr

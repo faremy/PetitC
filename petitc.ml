@@ -3,16 +3,17 @@
 
 open Format
 open Lexing
-open Parser
 open Ast
 
 let usage = "usage: petitc [options] file.c"
 
 let parse_only = ref false
+let type_only = ref false
 
 let spec =
   [
     "--parse-only", Arg.Set parse_only, "  stop after parsing";
+    "--type-only", Arg.Set type_only, "  stop after typing"
   ]
 
 let file =
@@ -47,14 +48,18 @@ let () =
     if !parse_only then exit 0;
     (*Interp.file f*)
   with
-    | Lexer.Lexing_Error s ->
-	report (lexeme_start_p lb, lexeme_end_p lb);
-	eprintf "lexical error: %s@." s;
-	exit 1
-    | Parser.Error ->
-	report (lexeme_start_p lb, lexeme_end_p lb);
-	eprintf "syntax error@.";
-	exit 1
-    | e ->
-	eprintf "Anomaly: %s\n@." (Printexc.to_string e);
-	exit 2
+  | Lexer.Lexing_Error s ->
+    report (lexeme_start_p lb, lexeme_end_p lb);
+    eprintf "lexical error: %s@." s;
+    exit 1
+  | Parser.Error ->
+    report (lexeme_start_p lb, lexeme_end_p lb);
+    eprintf "syntax error@.";
+    exit 1
+  | Typer.Typing_Error (l, s) ->
+    report l;
+    eprintf "typing error: %s@." s;
+    exit 1
+  | e ->
+    eprintf "Anomaly: %s\n@." (Printexc.to_string e);
+    exit 2

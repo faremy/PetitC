@@ -65,8 +65,11 @@ let dummy_expr desc =
   {edesc = desc; eloc = dummy_loc}
 
 let nothing = Block [] (* un ; seul *)
+let ctrue = Const (BoolCst true)
+let cfalse = Const (BoolCst false)
+let c0 = Const (IntCst 0)
 
-let make_df (t,id,args,d,lc) = {
+let make_df (t, id, args, d, lc) = {
   df_ret = t;
   df_id = id;
   df_args = args;

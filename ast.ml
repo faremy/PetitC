@@ -82,3 +82,9 @@ let make_dv (v, e, lc) = {
   dv_init = e;
   dv_loc = lc
 }
+
+let rec typ_str = function
+  | Void -> "void"
+  | Int -> "int"
+  | Bool -> "bool"
+  | Pointer tau -> (typ_str tau) ^ "*"

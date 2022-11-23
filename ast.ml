@@ -19,8 +19,18 @@ and binop =
 | Plus | Minus | Mul | Div | Mod
 
 and var = typ * string
-and decl_fct = var * var list * decl list
-and decl_var = var * expr option
+and decl_fct = {
+  df_ret: typ;
+  df_id: string;
+  df_args: var list;
+  df_body: decl list;
+  df_loc: loc
+}
+and decl_var = {
+  dv_var: var;
+  dv_init: expr option;
+  dv_loc: loc
+}
 and decl = Var of decl_var | Stmt of stmt
 
 and expr_desc =
@@ -55,3 +65,17 @@ let dummy_expr desc =
   {edesc = desc; eloc = dummy_loc}
 
 let nothing = Block [] (* un ; seul *)
+
+let make_df (t,id,args,d,lc) = {
+  df_ret = t;
+  df_id = id;
+  df_args = args;
+  df_body = d;
+  df_loc = lc
+}
+
+let make_dv (v, e, lc) = {
+  dv_var = v;
+  dv_init = e;
+  dv_loc = lc
+}

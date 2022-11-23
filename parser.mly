@@ -103,10 +103,10 @@ stmt:
 block:
 |	LBRA b = list(decl) RBRA { b }
 decl_var:
-|	v = var { (v, None) }
-|	v = var; ASSIGN; e = expr { (v, Some e) }
+|	v = var { make_dv (v, None, $loc) }
+|	v = var; ASSIGN; e = expr { make_dv (v, Some e, $loc) }
 decl_fct:
-|	f = var; LPAR; arg = separated_list(COMMA, var); RPAR; b = block { (f, arg, b) }
+|	t = typ; id = IDENT; LPAR; arg = separated_list(COMMA, var); RPAR; b = block { make_df (t, id, arg, b, $loc) }
 decl:
 |	d = decl_var; SEMICOLON { Var d }
 |	s = stmt { Stmt s }

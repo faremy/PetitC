@@ -108,6 +108,10 @@ stmt_desc:
 		|	None -> While (cond, body)
 		|	Some declared -> Block [Var declared; Stmt (dummy_stmt (While (cond, body)))]
 	}
+|	b = block { Block b }
+|	RETURN; e = option(expr); SEMICOLON { Return e }
+|	BREAK; SEMICOLON { Break }
+|	CONTINUE; SEMICOLON { Continue }
 stmt:
 |	s = stmt_desc { { sdesc = s; sloc = $loc } }
 

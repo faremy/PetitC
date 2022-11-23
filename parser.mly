@@ -123,6 +123,7 @@ decl_var:
 decl_fct:
 |	t = typ; id = IDENT; LPAR; arg = separated_list(COMMA, var); RPAR; b = block { make_df (t, id, arg, b, $loc) }
 decl:
+|	d = decl_fct { Fct d }
 |	d = decl_var; SEMICOLON { Var d }
 |	s = stmt { Stmt s }
 

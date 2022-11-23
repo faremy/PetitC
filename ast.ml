@@ -31,7 +31,7 @@ and decl_var = {
   dv_init: expr option;
   dv_loc: loc
 }
-and decl = Var of decl_var | Stmt of stmt
+and decl = Fct of decl_fct | Var of decl_var | Stmt of stmt
 
 and expr_desc =
 | Const of const

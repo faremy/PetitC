@@ -58,6 +58,15 @@ let type_expr var_env fct_env =
       end
 
     (* Assignation lv = rv, ex. x = (y = 2) *)
+    | Assign(e1r, e2r) -> begin
+        require_lval e1r "lvalue required as left operand of assignment";
+        let e1t = aux e1r and e2t = aux e2r in
+        let tau1 = e1t.etyp and tau2 = e2t.etyp in
+        if (not (equiv (tau1, tau2))) then
+          fail (Format.sprintf "incompatible types when assigning to type '%s' from type '%s'" (typ_str tau1) (typ_str tau2));
+        T_Assign(e1t, e2t), e1t.etyp
+      end
+  
     (* Unop sur lvalue *)
     (* Unop numérique *)
     (* Binop numérique *)

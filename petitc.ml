@@ -43,7 +43,7 @@ let () =
   try
     (* dumb_parser () *)
     let arbre = Parser.prog Lexer.token lb in
-    Format.printf "%a@." pp_prog arbre;
+    Format.eprintf "%a@." pp_prog arbre;
     if !parse_only then exit 0;
     (*Interp.file f*)
   with

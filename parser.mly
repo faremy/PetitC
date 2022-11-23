@@ -15,7 +15,7 @@
 %token PLUS, MINUS, MUL, DIV, MOD (* +, -, *, /, % *)
 %token NOT, AMP (* !, & *)
 %token PPLUS, MMINUS (* ++, -- *)
-%token TBOOL, TINT, TVOID
+%token TBOOL, TINT, TVOID (* types *)
 %token IF, ELSE, FOR, WHILE, CONTINUE, BREAK, RETURN
 %token SIZEOF
 %token NULL
@@ -33,6 +33,8 @@
 %left MUL, DIV, MOD
 %right AMP, NOT, PPLUS, MMINUS
 %nonassoc LSQR
+%nonassoc IF
+%nonassoc ELSE
 
 %type<Ast.prog> prog
 %start prog
@@ -80,7 +82,7 @@ expr_desc:
 
 |	AMP; e = expr { Unop (Amp, e) }
 |	NOT; e = expr { Unop (Not, e) }
-|	MUL; e = expr { Unop (Deref, e) }
+|	MUL; e = expr { Unop (Deref, e) } %prec AMP
 |	e1 = expr; LSQR; e2 = expr; RSQR { Unop (Deref, { edesc = Binop (Plus, e1, e2); eloc = $loc }) }
 
 |	e1 = expr; op = binop; e2 = expr { Binop (op, e1, e2) }
@@ -91,15 +93,14 @@ expr:
 |	e = expr_desc { { edesc = e; eloc = $loc } }
 
 stmt_desc:
-|	SEMICOLON { Dummy }
+|	SEMICOLON { nothing }
 |	e = expr; SEMICOLON { Expr e }
-|	IF; LPAR; e = expr; RPAR; s1 = stmt { Cond (e, s1, dummy_stmt Dummy) }
+|	IF; LPAR; e = expr; RPAR; s1 = stmt { Cond (e, s1, dummy_stmt nothing) } %prec IF
 |	IF; LPAR; e = expr; RPAR; s1 = stmt; ELSE; s2 = stmt { Cond (e, s1, s2) }
-
 stmt:
-|	s = stmt_desc { {sdesc = s; sloc = $loc }}
+|	s = stmt_desc { { sdesc = s; sloc = $loc } }
 
-%inline block:
+block:
 |	LBRA b = list(decl) RBRA { b }
 decl_var:
 |	v = var { (v, None) }

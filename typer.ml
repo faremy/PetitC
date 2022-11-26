@@ -53,6 +53,7 @@ let type_expr var_env fct_env =
     | Unop(Deref, e_raw) -> begin
         let e_ty = aux e_raw in
         match (e_ty.etyp) with
+          | Pointer Void -> fail "dereferencing 'void*' pointer"
           | Pointer tau -> T_Unop(Deref, e_ty), tau
           | tau -> fail (Format.sprintf "invalid type argument of unary '*' (have '%s')" (typ_str tau))
       end

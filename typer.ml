@@ -129,7 +129,8 @@ let type_expr var_env fct_env =
         T_Binop(op, e1t, e2t), (match (be2 e1t e2t) with
           | Int, Int -> Int
           | Pointer t, Int -> Pointer t
-          | Int, Pointer t -> Pointer t
+          | Int, Pointer t when op = Plus -> Pointer t (* + symétrisé *)
+          | Pointer t1, Pointer t2 when (op = Minus && t1 = t2) -> Int
           | _ -> fail_binop op e1t.etyp e2t.etyp)
 
     (* Binop {*,/,%,||,&&} *)
@@ -152,6 +153,5 @@ let type_expr var_env fct_env =
           (*Cannot use fail because localisation is the one of the argument*)
         te
       ) args f.args in
-      T_Call (name, targs), f.ret
-    | _ -> fail "cas non gere") in
-  aux;;
+      T_Call (name, targs), f.ret) in
+  aux

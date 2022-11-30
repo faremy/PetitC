@@ -83,12 +83,27 @@ let type_expr var_env fct_env =
     | Unop(Not, e_raw) ->
         let e_ty = aux e_raw in
         if (e_ty.etyp = Void) then
-          fail "invalid use of void expression"
+          fail "invalid use of void expression (not)"
         else
           T_Unop(Not, e_ty), Int
 
     (* Unop numérique *)
-    (* Binop numérique *)
+    (* Binop comparaison *)
+    | Binop(Eq as op, e1r, e2r)
+    | Binop(Neq as op, e1r, e2r)
+    | Binop(Lt as op, e1r, e2r)
+    | Binop(Le as op, e1r, e2r)
+    | Binop(Gt as op, e1r, e2r)
+    | Binop(Ge as op, e1r, e2r) ->
+        let e1t = aux e1r and e2t = aux e2r in
+        let t1 = e1t.etyp and t2 = e2t.etyp in
+        if (not (equiv (t1, t2))) then
+          f2t "comparaison between incompatible types '%s' and '%s'" t1 t2
+        else if (e1t.etyp = Void) then
+          fail "invalid use of void expression (comparaison)"
+        else
+          T_Binop(op, e1t, e2t), Int
+
     (* Avancer/reculer un pointeur, + à symétriser *)
     (* Distance entre deux pointeurs *)
     (* Appel de fonction *)

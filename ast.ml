@@ -21,7 +21,7 @@ let pp_typ fmt (tau : typ) =
 
 type const = IntCst of int | BoolCst of bool | Null
 
-and unop = Incr of bool | Decr of bool | Amp | Not | Deref
+and unop = Incr of bool | Decr of bool | Amp | Not | Deref | UPlus | UMinus
 (* Le booléen indique s'il faut renvoyer la valeur après [1] ou avant [0] incrémentation *)
 and binop =
 | Eq | Neq | Lt | Le | Gt | Ge

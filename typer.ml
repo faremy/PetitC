@@ -17,6 +17,9 @@ let equiv = function
   | Pointer t1, Pointer t2 when (t1 = Void || t2 = Void) -> true (* void* = t* *)
   | _ -> false
 
+let bool_eradictor = function
+  | Bool -> Int
+  | t -> t
 
 let type_expr var_env fct_env =
   let rec aux typing =
@@ -117,6 +120,16 @@ let type_expr var_env fct_env =
           fail "invalid use of void expression (comparison)"
         else
           T_Binop(op, e1t, e2t), Int
+
+    (* + et - : int et pointeur *)
+    | Binop(Plus as op, e1r, e2r)
+    | Binop(Minus as op, e1r, e2r) ->
+        let e1t = aux e1r and e2t = aux e2r in
+        T_Binop(op, e1t, e2t), (match (bool_eradictor e1t.etyp, bool_eradictor e2t.etyp) with
+          | Int, Int -> Int
+          | Pointer t, Int -> Pointer t
+          | Int, Pointer t -> Pointer t
+          | t1, t2 -> f2t "invalid operands to binary + (have '%s' and '%s')" t1 t2)
 
     (* Avancer/reculer un pointeur, + à symétriser *)
     (* Distance entre deux pointeurs *)

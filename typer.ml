@@ -70,7 +70,7 @@ let type_expr var_env fct_env =
         T_Assign(e1t, e2t), e1t.etyp
       end
   
-    (* Incr/decr *)
+    (* Incr/decr/not *)
     | Unop(Incr _ as op, e_raw) | Unop(Decr _ as op, e_raw) -> begin
         require_lval e_raw (match op with
           | Incr _ -> "increment operand"
@@ -79,6 +79,13 @@ let type_expr var_env fct_env =
         let e_ty = aux e_raw in
         T_Unop(op, e_ty), e_ty.etyp
       end
+
+    | Unop(Not, e_raw) ->
+        let e_ty = aux e_raw in
+        if (e_ty.etyp = Void) then
+          fail "invalid use of void expression"
+        else
+          T_Unop(Not, e_ty), Int
 
     (* Unop numérique *)
     (* Binop numérique *)

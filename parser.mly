@@ -73,8 +73,8 @@ expr_desc:
 |	id = IDENT; LPAR; e = separated_list(COMMA, expr); RPAR { Call (id, e) }
 |	SIZEOF; LPAR; t = typ; RPAR { Sizeof t }
 
-|	PLUS; e = expr { Unop (Uplus, e) } %prec PPLUS
-|	MINUS; e = expr { Binop (Uminus, e) } %prec MMINUS
+|	PLUS; e = expr { Unop (UPlus, e) } %prec PPLUS
+|	MINUS; e = expr { Unop (UMinus, e) } %prec MMINUS
 |	PPLUS; e = expr { Unop (Incr false, e) }
 |	MMINUS e = expr { Unop (Decr false, e) }
 |	e = expr; PPLUS { Unop (Incr true, e) }

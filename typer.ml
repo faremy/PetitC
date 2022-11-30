@@ -57,7 +57,7 @@ let type_expr var_env fct_env =
         match (e_ty.etyp) with
           | Pointer Void -> fail "dereferencing 'void*' pointer"
           | Pointer tau -> T_Unop(Deref, e_ty), tau
-          | tau -> f1t "invalid type argument of unary '*' (have '%s')" tau
+          | tau -> f1t "argument of unary '*' is not a pointer (has type '%s')" tau
       end
 
     (* Assignation lv = rv, ex. x = (y = 2) *)
@@ -83,11 +83,23 @@ let type_expr var_env fct_env =
     | Unop(Not, e_raw) ->
         let e_ty = aux e_raw in
         if (e_ty.etyp = Void) then
-          fail "invalid use of void expression (not)"
-        else
-          T_Unop(Not, e_ty), Int
+          fail "invalid use of void expression (not)";
+        T_Unop(Not, e_ty), Int
 
-    (* Unop numérique *)
+   | Unop(UPlus, e_raw) ->
+        let e_ty = aux e_raw in
+        let tau = e_ty.etyp in
+        if not (equiv (tau, Int)) then
+          f1t "unary '+' operand must have arithmetic type (has type '%s')" tau;
+        e_ty.t_edesc, Int
+
+    | Unop(UMinus, e_raw) ->
+      let e_ty = aux e_raw in
+      let tau = e_ty.etyp in
+      if not (equiv (tau, Int)) then
+        f1t "unary '-' operand must have arithmetic type (has type '%s')" tau;
+      T_Binop (Minus, { t_edesc = T_Const (IntCst 0); etyp = Int }, e_ty), Int
+
     (* Binop comparaison *)
     | Binop(Eq as op, e1r, e2r)
     | Binop(Neq as op, e1r, e2r)
@@ -100,7 +112,7 @@ let type_expr var_env fct_env =
         if (not (equiv (t1, t2))) then
           f2t "comparaison between incompatible types '%s' and '%s'" t1 t2
         else if (e1t.etyp = Void) then
-          fail "invalid use of void expression (comparaison)"
+          fail "invalid use of void expression (comparison)"
         else
           T_Binop(op, e1t, e2t), Int
 

@@ -86,7 +86,8 @@ let type_expr var_env fct_env =
           fail "invalid use of void expression (not)";
         T_Unop(Not, e_ty), Int
 
-   | Unop(UPlus, e_raw) ->
+    (* Unop arithmétiques *)
+    | Unop(UPlus, e_raw) ->
         let e_ty = aux e_raw in
         let tau = e_ty.etyp in
         if not (equiv (tau, Int)) then
@@ -100,7 +101,7 @@ let type_expr var_env fct_env =
         f1t "unary '-' operand must have arithmetic type (has type '%s')" tau;
       T_Binop (Minus, { t_edesc = T_Const (IntCst 0); etyp = Int }, e_ty), Int
 
-    (* Binop comparaison *)
+    (* Binop comparison *)
     | Binop(Eq as op, e1r, e2r)
     | Binop(Neq as op, e1r, e2r)
     | Binop(Lt as op, e1r, e2r)

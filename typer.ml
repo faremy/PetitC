@@ -20,6 +20,7 @@ let equiv = function
 let bool_eradictor = function
   | Bool -> Int
   | t -> t
+let be2 e1 e2 = (bool_eradictor e1.etyp, bool_eradictor e2.etyp)
 
 let type_expr var_env fct_env =
   let rec aux typing =
@@ -27,7 +28,7 @@ let type_expr var_env fct_env =
       raise (Typing_Error (typing.eloc, msg)) in
     let f1t s t = fail (Format.sprintf s (typ_str t))
     and f2t s t1 t2 = fail (Format.sprintf s (typ_str t1) (typ_str t2))
-    and fb2t s b t1 t2 = fail (Format.sprintf s (binop_str b) (typ_str t1) (typ_str t2))
+    and fail_binop b t1 t2 = fail (Format.sprintf "invalid operands to binary %s (have '%s' and '%s')" (binop_str b) (typ_str t1) (typ_str t2))
     and require_lval e msg =
       if (not (lvalue e)) then fail ("lvalue required as " ^ msg) in
     
@@ -115,7 +116,7 @@ let type_expr var_env fct_env =
         let e1t = aux e1r and e2t = aux e2r in
         let t1 = e1t.etyp and t2 = e2t.etyp in
         if (not (equiv (t1, t2))) then
-          fb2t "invalid operands to binary %s (have '%s' and '%s')" op t1 t2
+          fail_binop op t1 t2
         else if (e1t.etyp = Void) then
           fail "invalid use of void expression (comparison)"
         else
@@ -125,13 +126,20 @@ let type_expr var_env fct_env =
     | Binop(Plus as op, e1r, e2r)
     | Binop(Minus as op, e1r, e2r) ->
         let e1t = aux e1r and e2t = aux e2r in
-        T_Binop(op, e1t, e2t), (match (bool_eradictor e1t.etyp, bool_eradictor e2t.etyp) with
+        T_Binop(op, e1t, e2t), (match (be2 e1t e2t) with
           | Int, Int -> Int
           | Pointer t, Int -> Pointer t
           | Int, Pointer t -> Pointer t
-          | t1, t2 -> f2t "invalid operands to binary + (have '%s' and '%s')" t1 t2)
+          | _ -> fail_binop op e1t.etyp e2t.etyp)
 
-    (* Avancer/reculer un pointeur, + à symétriser *)
+    (* Binop {*,/,%,||,&&} *)
+    | Binop(op, e1r, e2r) ->
+        let e1t = aux e1r and e2t = aux e2r in
+        if (be2 e1t e2t <> (Int, Int)) then
+          fail_binop op e1t.etyp e2t.etyp
+        else T_Binop(op, e1t, e2t), Int
+
+
     (* Distance entre deux pointeurs *)
     (* Appel de fonction *)
     | Call (name, args) ->

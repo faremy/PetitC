@@ -92,3 +92,18 @@ let make_dv (v, e, lc) = {
   dv_init = e;
   dv_loc = lc
 }
+
+let binop_str = function
+| Plus -> "+"
+| Minus -> "-"
+| Mul -> "*"
+| Div -> "/"
+| Mod -> "%"
+| And -> "&&"
+| Or -> "||"
+| Eq -> "=="
+| Neq -> "!="
+| Lt -> "<"
+| Le -> "<="
+| Gt -> ">"
+| Ge -> ">="

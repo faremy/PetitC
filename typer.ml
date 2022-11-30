@@ -24,6 +24,7 @@ let type_expr var_env fct_env =
       raise (Typing_Error (typing.eloc, msg)) in
     let f1t s t = fail (Format.sprintf s (typ_str t))
     and f2t s t1 t2 = fail (Format.sprintf s (typ_str t1) (typ_str t2))
+    and fb2t s b t1 t2 = fail (Format.sprintf s (binop_str b) (typ_str t1) (typ_str t2))
     and require_lval e msg =
       if (not (lvalue e)) then fail ("lvalue required as " ^ msg) in
     
@@ -111,7 +112,7 @@ let type_expr var_env fct_env =
         let e1t = aux e1r and e2t = aux e2r in
         let t1 = e1t.etyp and t2 = e2t.etyp in
         if (not (equiv (t1, t2))) then
-          f2t "comparaison between incompatible types '%s' and '%s'" t1 t2
+          fb2t "invalid operands to binary %s (have '%s' and '%s')" op t1 t2
         else if (e1t.etyp = Void) then
           fail "invalid use of void expression (comparison)"
         else

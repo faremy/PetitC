@@ -92,5 +92,16 @@ let type_expr var_env fct_env =
     (* Avancer/reculer un pointeur, + à symétriser *)
     (* Distance entre deux pointeurs *)
     (* Appel de fonction *)
+    | Call (name, args) ->
+      let f = (try Smap.find name fct_env with Not_found -> fail (Format.sprintf "function '%s' is undeclared" name)) in
+      let targs = List.map2 (fun e t ->
+        let te = aux e in
+        if not (equiv (te.etyp, t)) then
+          raise (Typing_Error (e.eloc,
+            Format.sprintf "argument of type '%s' incompatible with expected type '%s'" (typ_str te.etyp) (typ_str t)));
+          (*Cannot use fail because localisation is the one of the argument*)
+        te
+      ) args f.args in
+      T_Call (name, targs), f.ret
     | _ -> fail "cas non gere") in
   aux;;

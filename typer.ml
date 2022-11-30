@@ -22,7 +22,9 @@ let type_expr var_env fct_env =
   let rec aux typing =
     let fail msg =
       raise (Typing_Error (typing.eloc, msg)) in
-    let require_lval e msg =
+    let f1t s t = fail (Format.sprintf s (typ_str t))
+    and f2t s t1 t2 = fail (Format.sprintf s (typ_str t1) (typ_str t2))
+    and require_lval e msg =
       if (not (lvalue e)) then fail msg in
     
     (* Le match retourne une paire brute, transformée en record par make_te *)
@@ -55,7 +57,7 @@ let type_expr var_env fct_env =
         match (e_ty.etyp) with
           | Pointer Void -> fail "dereferencing 'void*' pointer"
           | Pointer tau -> T_Unop(Deref, e_ty), tau
-          | tau -> fail (Format.sprintf "invalid type argument of unary '*' (have '%s')" (typ_str tau))
+          | tau -> f1t "invalid type argument of unary '*' (have '%s')" tau
       end
 
     (* Assignation lv = rv, ex. x = (y = 2) *)
@@ -64,7 +66,7 @@ let type_expr var_env fct_env =
         let e1t = aux e1r and e2t = aux e2r in
         let tau1 = e1t.etyp and tau2 = e2t.etyp in
         if (not (equiv (tau1, tau2))) then
-          fail (Format.sprintf "incompatible types when assigning to type '%s' from type '%s'" (typ_str tau1) (typ_str tau2));
+          f2t "incompatible types when assigning to type '%s' from type '%s'" tau1 tau2;
         T_Assign(e1t, e2t), e1t.etyp
       end
   

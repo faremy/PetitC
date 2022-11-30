@@ -155,3 +155,46 @@ let type_expr var_env fct_env =
       ) args f.args in
       T_Call (name, targs), f.ret) in
   aux
+
+
+let rec type_stmt var_env fct_env expect in_loop typing =
+  let fail msg = raise (Typing_Error (typing.sloc, msg)) in
+  let f1t s t = fail (Format.sprintf s (typ_str t)) in
+  let f2t s t1 t2 = fail (Format.sprintf s (typ_str t1) (typ_str t2)) in
+  match typing.sdesc with
+  | Block [] -> t_nothing
+  | Expr e_raw -> T_Expr (type_expr var_env fct_env e_raw)
+  | Block _ -> type_block ()
+
+  | Return None ->
+      if expect <> Void then
+        fail "expected a return value";
+      T_Return None
+  | Return (Some e_raw) ->
+      let e_ty = type_expr var_env fct_env e_raw in
+      let tau = e_ty.etyp in
+      if not (equiv (expect, tau)) then
+        f2t "return value doesn't have expected type %s (has type %s)" expect tau;
+      T_Return (Some e_ty)
+
+  | Cond (c_raw, s1_raw, s2_raw) ->
+      let c_ty = type_expr var_env fct_env c_raw
+      and s1_ty = type_stmt var_env fct_env expect in_loop s1_raw
+      and s2_ty = type_stmt var_env fct_env expect in_loop s2_raw in
+
+      if equiv (c_ty.etyp, Void) then
+        fail "void value not ignored as it ought to be";
+      T_Cond (c_ty, s1_ty, s2_ty)
+
+  | Break ->
+      if not in_loop then
+        fail "break outside of loop";
+      T_Break
+  | Continue ->
+      if not in_loop then
+        fail "continue outside of loop";
+      T_Continue
+
+  | _ -> fail "adsasdoka"
+and type_block () = t_nothing
+  

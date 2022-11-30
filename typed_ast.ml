@@ -31,12 +31,14 @@ and t_stmt =
 | T_Expr of t_expr
 | T_Block of t_decl list
 | T_Cond of t_expr * t_stmt * t_stmt
-| While of t_expr * t_stmt
-| Return of t_expr option
-| Break
-| Continue
+| T_While of t_expr * t_stmt
+| T_Return of t_expr option
+| T_Break
+| T_Continue
 
 and t_prog = t_decl_fct list
 
 let make_te (desc, tau) =
   { t_edesc = desc; etyp = tau }
+
+let t_nothing = T_Block []

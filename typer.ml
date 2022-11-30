@@ -25,7 +25,7 @@ let type_expr var_env fct_env =
     let f1t s t = fail (Format.sprintf s (typ_str t))
     and f2t s t1 t2 = fail (Format.sprintf s (typ_str t1) (typ_str t2))
     and require_lval e msg =
-      if (not (lvalue e)) then fail msg in
+      if (not (lvalue e)) then fail ("lvalue required as " ^ msg) in
     
     (* Le match retourne une paire brute, transformée en record par make_te *)
     make_te (match typing.edesc with
@@ -47,7 +47,7 @@ let type_expr var_env fct_env =
 
     (* Pointeur : amp et deref *)
     | Unop(Amp, e_raw) -> begin
-        require_lval e_raw "lvalue required as unary '&' operand";
+        require_lval e_raw "unary '&' operand";
         let e_ty = aux e_raw in
         T_Unop(Amp, e_ty), Pointer e_ty.etyp
       end
@@ -62,7 +62,7 @@ let type_expr var_env fct_env =
 
     (* Assignation lv = rv, ex. x = (y = 2) *)
     | Assign(e1r, e2r) -> begin
-        require_lval e1r "lvalue required as left operand of assignment";
+        require_lval e1r "left operand of assignment";
         let e1t = aux e1r and e2t = aux e2r in
         let tau1 = e1t.etyp and tau2 = e2t.etyp in
         if (not (equiv (tau1, tau2))) then
@@ -70,7 +70,16 @@ let type_expr var_env fct_env =
         T_Assign(e1t, e2t), e1t.etyp
       end
   
-    (* Unop sur lvalue *)
+    (* Incr/decr *)
+    | Unop(Incr _ as op, e_raw) | Unop(Decr _ as op, e_raw) -> begin
+        require_lval e_raw (match op with
+          | Incr _ -> "increment operand"
+          | Decr _ -> "decrement operand"
+          | _ -> fail "pas possible");
+        let e_ty = aux e_raw in
+        T_Unop(op, e_ty), e_ty.etyp
+      end
+
     (* Unop numérique *)
     (* Binop numérique *)
     (* Avancer/reculer un pointeur, + à symétriser *)

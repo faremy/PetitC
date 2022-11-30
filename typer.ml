@@ -159,12 +159,10 @@ let type_expr var_env fct_env =
 
 let rec type_stmt var_env fct_env expect in_loop typing =
   let fail msg = raise (Typing_Error (typing.sloc, msg)) in
-  let f1t s t = fail (Format.sprintf s (typ_str t)) in
   let f2t s t1 t2 = fail (Format.sprintf s (typ_str t1) (typ_str t2)) in
   match typing.sdesc with
-  | Block [] -> t_nothing
   | Expr e_raw -> T_Expr (type_expr var_env fct_env e_raw)
-  | Block _ -> type_block ()
+  | Block b -> T_Block (List.map (type_decl var_env fct_env expect in_loop) b)
 
   | Return None ->
       if expect <> Void then
@@ -202,5 +200,7 @@ let rec type_stmt var_env fct_env expect in_loop typing =
       if equiv (c_ty.etyp, Void) then
         fail "void value not ignored as it ought to be";
       T_While (c_ty, s_ty)
-and type_block () = t_nothing
-  
+and type_decl var_env fct_env expect in_loop = function
+| Stmt s -> T_Stmt (type_stmt var_env fct_env expect in_loop s)
+| Var dv -> T_Stmt t_nothing
+| Fct df -> failwith "decl fct pas encore géré"

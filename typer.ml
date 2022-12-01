@@ -205,14 +205,19 @@ let rec type_stmt var_env fct_env expect in_loop typing =
       if equiv c_ty.etyp Void then
         fail "void value not ignored as it ought to be";
       T_For (c_ty, es_ty, s_ty)
-and type_block var_env fct_env expect in_loop b =
-  let taken_names = ref Sset.empty in
 
-  let type_decl var_env fct_env rev_t_block (typing : decl) =
+and type_block var_env_init fct_env_init expect in_loop raw_block =
+  (* On a besoin de persistence uniquement pour rentrer dans *)
+  (* un sous-bloc : dans ce cas appel récursif à type_block *)
+  (* et type_decl aura accès à de nouvelles références *)
+  let taken_names = ref Sset.empty in
+  let var_env = ref var_env_init and fct_env = ref fct_env_init in
+
+  let type_decl typing =
     let fail msg = raise (Typing_Error (loc_decl typing, msg)) in
     let f2t s t1 t2 = fail (Format.sprintf s (typ_str t1) (typ_str t2)) in
     match typing with
-    | Stmt s -> var_env, fct_env, (T_Stmt (type_stmt var_env fct_env expect in_loop s) :: rev_t_block)
+    | Stmt s -> T_Stmt (type_stmt !var_env !fct_env expect in_loop s)
     | Var dv ->
         let ty, name = dv.dv_var in
         if equiv ty Void then
@@ -221,18 +226,18 @@ and type_block var_env fct_env expect in_loop b =
         if Sset.mem name !taken_names then failwith "adkaosda";
         taken_names := Sset.add name !taken_names;
 
-        (Smap.add name ty var_env), fct_env, (begin
-        match dv.dv_init with
+        var_env := Smap.add name ty !var_env;
+        (match dv.dv_init with
           | None -> T_Var { t_dv_var = (ty, name); t_dv_init = None }
           | Some e_raw ->
-            let e_ty = type_expr var_env fct_env e_raw in
+            let e_ty = type_expr !var_env !fct_env e_raw in
             if not (equiv ty e_ty.etyp) then
               f2t "incompatible types when initializing type '%s' using type '%s'" ty e_ty.etyp;
-            T_Var { t_dv_var = (ty, name); t_dv_init = Some e_ty }
-        end :: rev_t_block)
-        
+            T_Var { t_dv_var = (ty, name); t_dv_init = Some e_ty })
+                
     | _ -> failwith "non géré"
   in
-List.rev ((fun (_, _, d) -> d) (List.fold_left (fun (ve, fe, lst) d -> type_decl ve fe lst d) (var_env, fct_env, []) b))
+  List.map type_decl raw_block
+
 and type_fct var_env fct_env typing =
   t_nothing

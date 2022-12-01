@@ -216,6 +216,11 @@ and type_block var_env_init fct_env_init expect in_loop raw_block =
   let type_decl typing =
     let fail msg = raise (Typing_Error (loc_decl typing, msg)) in
     let f2t s t1 t2 = fail (Format.sprintf s (typ_str t1) (typ_str t2)) in
+    (* Empêche une redéfinition dans le même bloc *)
+    let take_name name =
+      if Sset.mem name !taken_names then fail (Format.sprintf "redefinition of '%s'" name)
+      else taken_names := Sset.add name !taken_names in
+    
     match typing with
     | Stmt s -> T_Stmt (type_stmt !var_env !fct_env expect in_loop s)
     | Var dv ->
@@ -223,9 +228,7 @@ and type_block var_env_init fct_env_init expect in_loop raw_block =
         if equiv ty Void then
           fail ("variable '" ^ name ^ "' declared void");
 
-        if Sset.mem name !taken_names then failwith "adkaosda";
-        taken_names := Sset.add name !taken_names;
-
+        take_name name;
         var_env := Smap.add name ty !var_env;
         (match dv.dv_init with
           | None -> T_Var { t_dv_var = (ty, name); t_dv_init = None }
@@ -234,10 +237,17 @@ and type_block var_env_init fct_env_init expect in_loop raw_block =
             if not (equiv ty e_ty.etyp) then
               f2t "incompatible types when initializing type '%s' using type '%s'" ty e_ty.etyp;
             T_Var { t_dv_var = (ty, name); t_dv_init = Some e_ty })
-                
-    | _ -> failwith "non géré"
+
+    | Fct df ->
+        let name = df.df_id in
+        take_name df.df_id;
+        (* Ajouter son proto dans l'env avant de la typer *)
+        (* permettra de gérer la récursion correctement *)
+        (* Elle pourra être shadow par une de ses fonctions imbriquées *)
+        fct_env := Smap.add name (ftyp_of_decl df) !fct_env;
+        T_Fct (type_fct !var_env !fct_env df)
   in
   List.map type_decl raw_block
 
 and type_fct var_env fct_env typing =
-  t_nothing
+  failwith "todo type_fct"

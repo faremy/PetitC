@@ -97,17 +97,9 @@ stmt_desc:
 |	e = expr; SEMICOLON { Expr e }
 |	IF; LPAR; e = expr; RPAR; s1 = stmt { Cond (e, s1, dummy_stmt nothing) } %prec IF
 |	IF; LPAR; e = expr; RPAR; s1 = stmt; ELSE; s2 = stmt { Cond (e, s1, s2) }
-|	WHILE; LPAR; e = expr; RPAR; s = stmt { While (e, s) }
+|	WHILE; LPAR; e = expr; RPAR; s = stmt { For (None, Some e, []) }
 |	FOR; LPAR; v = option(decl_var); SEMICOLON; e = option(expr); SEMICOLON; es = separated_list(COMMA, expr); RPAR; s = stmt
-	{
-		let cond = match e with None -> dummy_expr ctrue | Some c -> c in
-		let after = List.map (fun ex -> Stmt { sdesc = Expr ex; sloc = ex.eloc }) es in
-		let body = dummy_stmt (Block (Stmt s :: after)) in
-		
-		match v with
-		|	None -> While (cond, body)
-		|	Some declared -> Block [Var declared; Stmt (dummy_stmt (While (cond, body)))]
-	}
+	{ For (v, e, es) }
 |	b = block { Block b }
 |	RETURN; e = option(expr); SEMICOLON { Return e }
 |	BREAK; SEMICOLON { Break }

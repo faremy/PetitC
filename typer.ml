@@ -196,13 +196,14 @@ let rec type_stmt var_env fct_env expect in_loop typing =
         fail "continue outside of loop";
       T_Continue
 
-  | While (c_raw, s_raw) ->
+  (* | While (c_raw, s_raw) ->
       let c_ty = aux_expr c_raw
       and s_ty = type_stmt var_env fct_env expect true s_raw in
 
       if equiv c_ty.etyp Void then
         fail "void value not ignored as it ought to be";
-      T_While (c_ty, s_ty)
+      T_While (c_ty, s_ty) *)
+  | For _ -> failwith "todo for"
 and type_decl var_env fct_env expect in_loop = function
 | Stmt s -> T_Stmt (type_stmt var_env fct_env expect in_loop s)
 | Var dv -> T_Stmt t_nothing

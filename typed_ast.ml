@@ -1,11 +1,6 @@
 open Ast
 
-type ftyp = {
-  ret: typ;
-  args: typ list
-}
-
-and t_decl_fct = {
+type t_decl_fct = {
   t_df_ret: typ;
   t_df_id: string;
   t_df_args: var list;

@@ -23,7 +23,7 @@ let bool_eradictor = function
   | t -> t
 let be2 e1 e2 = (bool_eradictor e1.etyp, bool_eradictor e2.etyp)
 
-let type_expr var_env fct_env =
+let type_expr (var_env : venv) (fct_env : fenv) =
   let rec aux typing =
     let fail msg =
       raise (Typing_Error (typing.eloc, msg)) in
@@ -145,7 +145,7 @@ let type_expr var_env fct_env =
     (* Distance entre deux pointeurs *)
     (* Appel de fonction *)
     | Call (name, args) ->
-      let f = (try Smap.find name fct_env with Not_found -> fail (Format.sprintf "function '%s' is undeclared" name)) in
+      let f_ret, f_args = (try Smap.find name fct_env with Not_found -> fail (Format.sprintf "function '%s' is undeclared" name)) in
       let targs = List.map2 (fun e t ->
         let te = aux e in
         if not (equiv te.etyp t) then
@@ -153,8 +153,8 @@ let type_expr var_env fct_env =
             Format.sprintf "argument of type '%s' incompatible with expected type '%s'" (typ_str te.etyp) (typ_str t)));
           (*Cannot use fail because localisation is the one of the argument*)
         te
-      ) args f.args in
-      T_Call (name, targs), f.ret) in
+      ) args f_args in
+      T_Call (name, targs), f_ret) in
   aux
 
 

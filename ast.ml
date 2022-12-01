@@ -9,6 +9,7 @@ let pp_loc fmt (l : loc) =
   Format.fprintf fmt "l%d c%d-%d" l fc lc
 
 type typ = Void | Int | Bool | Pointer of typ
+and ftyp = typ * (typ list)
 
 let rec typ_str = function
   | Void -> "void"
@@ -112,3 +113,6 @@ let loc_decl = function
 | Stmt s -> s.sloc
 | Var v -> v.dv_loc
 | Fct f -> f.df_loc
+
+let ftyp_of_decl : decl_fct -> ftyp =
+  fun df -> df.df_ret, List.map fst df.df_args

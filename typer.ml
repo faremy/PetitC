@@ -11,7 +11,7 @@ let lvalue e = match e.edesc with
 | Unop (Deref, _) -> true
 | _ -> false
 
-let equiv = function
+let equiv u v = match u, v with
   | t1, t2 when t1 = t2 -> true (* réflexive *)
   | Int, Bool | Bool, Int -> true (* int = bool *)
   | Pointer t1, Pointer t2 when (t1 = Void || t2 = Void) -> true (* void* = t* *)
@@ -70,7 +70,7 @@ let type_expr var_env fct_env =
         require_lval e1r "left operand of assignment";
         let e1t = aux e1r and e2t = aux e2r in
         let tau1 = e1t.etyp and tau2 = e2t.etyp in
-        if (not (equiv (tau1, tau2))) then
+        if not (equiv tau1 tau2) then
           f2t "incompatible types when assigning to type '%s' from type '%s'" tau1 tau2;
         T_Assign(e1t, e2t), e1t.etyp
       end
@@ -95,14 +95,14 @@ let type_expr var_env fct_env =
     | Unop(UPlus, e_raw) ->
         let e_ty = aux e_raw in
         let tau = e_ty.etyp in
-        if not (equiv (tau, Int)) then
+        if not (equiv tau Int) then
           f1t "unary '+' operand must have arithmetic type (has type '%s')" tau;
         e_ty.t_edesc, Int
 
     | Unop(UMinus, e_raw) ->
       let e_ty = aux e_raw in
       let tau = e_ty.etyp in
-      if not (equiv (tau, Int)) then
+      if not (equiv tau Int) then
         f1t "unary '-' operand must have arithmetic type (has type '%s')" tau;
       T_Binop (Minus, { t_edesc = T_Const (IntCst 0); etyp = Int }, e_ty), Int
 
@@ -115,7 +115,7 @@ let type_expr var_env fct_env =
     | Binop(Ge as op, e1r, e2r) ->
         let e1t = aux e1r and e2t = aux e2r in
         let t1 = e1t.etyp and t2 = e2t.etyp in
-        if (not (equiv (t1, t2))) then
+        if not (equiv t1 t2) then
           fail_binop op t1 t2
         else if (e1t.etyp = Void) then
           fail "invalid use of void expression (comparison)"
@@ -147,7 +147,7 @@ let type_expr var_env fct_env =
       let f = (try Smap.find name fct_env with Not_found -> fail (Format.sprintf "function '%s' is undeclared" name)) in
       let targs = List.map2 (fun e t ->
         let te = aux e in
-        if not (equiv (te.etyp, t)) then
+        if not (equiv te.etyp t) then
           raise (Typing_Error (e.eloc,
             Format.sprintf "argument of type '%s' incompatible with expected type '%s'" (typ_str te.etyp) (typ_str t)));
           (*Cannot use fail because localisation is the one of the argument*)
@@ -174,7 +174,7 @@ let rec type_stmt var_env fct_env expect in_loop typing =
   | Return (Some e_raw) ->
       let e_ty = aux_expr e_raw in
       let tau = e_ty.etyp in
-      if not (equiv (expect, tau)) then
+      if not (equiv expect tau) then
         f2t "return value doesn't have expected type %s (has type %s)" expect tau;
       T_Return (Some e_ty)
 
@@ -183,7 +183,7 @@ let rec type_stmt var_env fct_env expect in_loop typing =
       and s1_ty = aux_stmt s1_raw
       and s2_ty = aux_stmt s2_raw in
 
-      if equiv (c_ty.etyp, Void) then
+      if equiv c_ty.etyp Void then
         fail "void value not ignored as it ought to be";
       T_Cond (c_ty, s1_ty, s2_ty)
 
@@ -200,7 +200,7 @@ let rec type_stmt var_env fct_env expect in_loop typing =
       let c_ty = aux_expr c_raw
       and s_ty = type_stmt var_env fct_env expect true s_raw in
 
-      if equiv (c_ty.etyp, Void) then
+      if equiv c_ty.etyp Void then
         fail "void value not ignored as it ought to be";
       T_While (c_ty, s_ty)
 and type_decl var_env fct_env expect in_loop = function

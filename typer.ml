@@ -165,7 +165,7 @@ let rec type_stmt var_env fct_env expect in_loop typing =
 
   match typing.sdesc with
   | Expr e_raw -> T_Expr (aux_expr e_raw)
-  | Block b -> T_Block (type_block var_env fct_env expect in_loop b)
+  | Block b -> T_Block (type_block var_env fct_env Smap.empty expect in_loop b)
 
   | Return None ->
       if expect <> Void then
@@ -204,8 +204,8 @@ let rec type_stmt var_env fct_env expect in_loop typing =
       if equiv c_ty.etyp Void then
         fail "void value not ignored as it ought to be";
       T_For (c_ty, es_ty, s_ty)
-and type_block var_env fct_env expect in_loop b =
-  let env_block = ref Smap.empty in
+and type_block var_env fct_env init_env expect in_loop b =
+  let env_block = ref init_env in
 
   let type_decl var_env fct_env rev_t_block (typing : decl) =
     let fail msg = raise (Typing_Error (loc_decl typing, msg)) in
@@ -233,4 +233,5 @@ and type_block var_env fct_env expect in_loop b =
     | _ -> failwith "non géré"
   in
 List.rev ((fun (_, _, d) -> d) (List.fold_left (fun (ve, fe, lst) d -> type_decl ve fe lst d) (var_env, fct_env, []) b))
-and type_fct () = t_nothing
+and type_fct var_env fct_env typing =
+  t_nothing

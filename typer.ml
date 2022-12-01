@@ -161,7 +161,7 @@ let rec type_stmt var_env fct_env expect in_loop typing =
   let fail msg = raise (Typing_Error (typing.sloc, msg)) in
   let f2t s t1 t2 = fail (Format.sprintf s (typ_str t1) (typ_str t2))
   and aux_expr = type_expr var_env fct_env
-  and aux_stmt = type_stmt var_env fct_env expect in_loop in
+  and aux_stmt = type_stmt var_env fct_env expect in
 
   match typing.sdesc with
   | Expr e_raw -> T_Expr (aux_expr e_raw)
@@ -180,8 +180,8 @@ let rec type_stmt var_env fct_env expect in_loop typing =
 
   | Cond (c_raw, s1_raw, s2_raw) ->
       let c_ty = aux_expr c_raw
-      and s1_ty = aux_stmt s1_raw
-      and s2_ty = aux_stmt s2_raw in
+      and s1_ty = aux_stmt in_loop s1_raw
+      and s2_ty = aux_stmt in_loop s2_raw in
 
       if equiv c_ty.etyp Void then
         fail "void value not ignored as it ought to be";
@@ -196,15 +196,15 @@ let rec type_stmt var_env fct_env expect in_loop typing =
         fail "continue outside of loop";
       T_Continue
 
-  (* | While (c_raw, s_raw) ->
+  | For (c_raw, es_raw, s_raw) ->
       let c_ty = aux_expr c_raw
-      and s_ty = type_stmt var_env fct_env expect true s_raw in
+      and es_ty = List.map aux_expr es_raw
+      and s_ty = aux_stmt true s_raw in
 
       if equiv c_ty.etyp Void then
         fail "void value not ignored as it ought to be";
-      T_While (c_ty, s_ty) *)
-  | For _ -> failwith "todo for"
-  and type_block var_env fct_env expect in_loop b =
+      T_For (c_ty, es_ty, s_ty)
+and type_block var_env fct_env expect in_loop b =
   let env_block = ref Smap.empty in
 
   let type_decl var_env fct_env rev_t_block (typing : decl) =

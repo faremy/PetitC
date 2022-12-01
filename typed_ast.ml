@@ -31,7 +31,7 @@ and t_stmt =
 | T_Expr of t_expr
 | T_Block of t_decl list
 | T_Cond of t_expr * t_stmt * t_stmt
-| T_While of t_expr * t_stmt
+| T_For of t_expr * t_expr list * t_stmt
 | T_Return of t_expr option
 | T_Break
 | T_Continue

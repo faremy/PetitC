@@ -159,9 +159,12 @@ let type_expr var_env fct_env =
 
 let rec type_stmt var_env fct_env expect in_loop typing =
   let fail msg = raise (Typing_Error (typing.sloc, msg)) in
-  let f2t s t1 t2 = fail (Format.sprintf s (typ_str t1) (typ_str t2)) in
+  let f2t s t1 t2 = fail (Format.sprintf s (typ_str t1) (typ_str t2))
+  and aux_expr = type_expr var_env fct_env
+  and aux_stmt = type_stmt var_env fct_env expect in_loop in
+
   match typing.sdesc with
-  | Expr e_raw -> T_Expr (type_expr var_env fct_env e_raw)
+  | Expr e_raw -> T_Expr (aux_expr e_raw)
   | Block b -> T_Block (List.map (type_decl var_env fct_env expect in_loop) b)
 
   | Return None ->
@@ -169,16 +172,16 @@ let rec type_stmt var_env fct_env expect in_loop typing =
         fail "expected a return value";
       T_Return None
   | Return (Some e_raw) ->
-      let e_ty = type_expr var_env fct_env e_raw in
+      let e_ty = aux_expr e_raw in
       let tau = e_ty.etyp in
       if not (equiv (expect, tau)) then
         f2t "return value doesn't have expected type %s (has type %s)" expect tau;
       T_Return (Some e_ty)
 
   | Cond (c_raw, s1_raw, s2_raw) ->
-      let c_ty = type_expr var_env fct_env c_raw
-      and s1_ty = type_stmt var_env fct_env expect in_loop s1_raw
-      and s2_ty = type_stmt var_env fct_env expect in_loop s2_raw in
+      let c_ty = aux_expr c_raw
+      and s1_ty = aux_stmt s1_raw
+      and s2_ty = aux_stmt s2_raw in
 
       if equiv (c_ty.etyp, Void) then
         fail "void value not ignored as it ought to be";
@@ -194,7 +197,7 @@ let rec type_stmt var_env fct_env expect in_loop typing =
       T_Continue
 
   | While (c_raw, s_raw) ->
-      let c_ty = type_expr var_env fct_env c_raw
+      let c_ty = aux_expr c_raw
       and s_ty = type_stmt var_env fct_env expect true s_raw in
 
       if equiv (c_ty.etyp, Void) then

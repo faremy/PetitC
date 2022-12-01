@@ -165,7 +165,7 @@ let rec type_stmt var_env fct_env expect in_loop typing =
 
   match typing.sdesc with
   | Expr e_raw -> T_Expr (aux_expr e_raw)
-  | Block b -> T_Block (List.map (type_decl var_env fct_env expect in_loop) b)
+  | Block b -> T_Block (type_block var_env fct_env expect in_loop b)
 
   | Return None ->
       if expect <> Void then
@@ -204,7 +204,33 @@ let rec type_stmt var_env fct_env expect in_loop typing =
         fail "void value not ignored as it ought to be";
       T_While (c_ty, s_ty) *)
   | For _ -> failwith "todo for"
-and type_decl var_env fct_env expect in_loop = function
-| Stmt s -> T_Stmt (type_stmt var_env fct_env expect in_loop s)
-| Var dv -> T_Stmt t_nothing
-| Fct df -> failwith "decl fct pas encore géré"
+  and type_block var_env fct_env expect in_loop b =
+  let env_block = ref Smap.empty in
+
+  let type_decl var_env fct_env rev_t_block (typing : decl) =
+    let fail msg = raise (Typing_Error (loc_decl typing, msg)) in
+    let f2t s t1 t2 = fail (Format.sprintf s (typ_str t1) (typ_str t2)) in
+    match typing with
+    | Stmt s -> var_env, fct_env, (T_Stmt (type_stmt var_env fct_env expect in_loop s) :: rev_t_block)
+    | Var dv ->
+        let ty, name = dv.dv_var in
+        if equiv ty Void then
+          fail ("variable '" ^ name ^ "' declared void");
+
+        if Smap.mem name !env_block then failwith "adkaosda";
+        env_block := Smap.add name () !env_block;
+
+        (Smap.add name ty var_env), fct_env, (begin
+        match dv.dv_init with
+          | None -> T_Var { t_dv_var = (ty, name); t_dv_init = None }
+          | Some e_raw ->
+            let e_ty = type_expr var_env fct_env e_raw in
+            if not (equiv ty e_ty.etyp) then
+              f2t "incompatible types when initializing type '%s' using type '%s'" ty e_ty.etyp;
+            T_Var { t_dv_var = (ty, name); t_dv_init = Some e_ty }
+        end :: rev_t_block)
+        
+    | _ -> failwith "non géré"
+  in
+List.rev ((fun (_, _, d) -> d) (List.fold_left (fun (ve, fe, lst) d -> type_decl ve fe lst d) (var_env, fct_env, []) b))
+and type_fct () = t_nothing

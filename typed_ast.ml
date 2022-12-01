@@ -6,14 +6,14 @@ type ftyp = {
 }
 
 and t_decl_fct = {
-  df_ret: typ;
-  df_id: string;
-  df_args: var list;
-  df_body: t_decl list;
+  t_df_ret: typ;
+  t_df_id: string;
+  t_df_args: var list;
+  t_df_body: t_decl list;
 }
 and t_decl_var = {
-  dv_var: var;
-  dv_init: t_expr option;
+  t_dv_var: var;
+  t_dv_init: t_expr option;
 }
 and t_decl = T_Fct of t_decl_fct | T_Var of t_decl_var | T_Stmt of t_stmt
 

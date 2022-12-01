@@ -30,6 +30,7 @@ let type_expr (var_env : venv) (fct_env : fenv) =
     let f1t s t = fail (Format.sprintf s (typ_str t))
     and f2t s t1 t2 = fail (Format.sprintf s (typ_str t1) (typ_str t2))
     and fail_binop b t1 t2 = fail (Format.sprintf "invalid operands to binary %s (have '%s' and '%s')" (binop_str b) (typ_str t1) (typ_str t2))
+    and f1s s x = fail (Format.sprintf s x)
     and require_lval e msg =
       if (not (lvalue e)) then fail ("lvalue required as " ^ msg) in
     
@@ -44,7 +45,7 @@ let type_expr (var_env : venv) (fct_env : fenv) =
     (* Variables *)
     | Ident s -> begin
         try T_Ident s, Smap.find s var_env
-        with Not_found -> fail (Format.sprintf "variable '%s' is undeclared" s)
+        with Not_found -> f1s "variable '%s' is undeclared" s
       end
 
     (* Sizeof *)
@@ -142,10 +143,15 @@ let type_expr (var_env : venv) (fct_env : fenv) =
         else T_Binop(op, e1t, e2t), Int
 
 
-    (* Distance entre deux pointeurs *)
     (* Appel de fonction *)
-    | Call (name, args) ->
-      let f_ret, f_args = (try Smap.find name fct_env with Not_found -> fail (Format.sprintf "function '%s' is undeclared" name)) in
+    | Call (name, call_args) ->
+      let proto_ret, proto_args = (try Smap.find name fct_env
+      with Not_found -> fail (Format.sprintf "function '%s' is undeclared" name)) in
+      let nb_call = List.length call_args and nb_proto = List.length proto_args in
+      if nb_call > nb_proto then
+        f1s "too many arguments to function '%s'" name;
+      if nb_call < nb_proto then
+        f1s "too few arguments to function '%s'" name;
       let targs = List.map2 (fun e t ->
         let te = aux e in
         if not (equiv te.etyp t) then
@@ -153,8 +159,8 @@ let type_expr (var_env : venv) (fct_env : fenv) =
             Format.sprintf "argument of type '%s' incompatible with expected type '%s'" (typ_str te.etyp) (typ_str t)));
           (*Cannot use fail because localisation is the one of the argument*)
         te
-      ) args f_args in
-      T_Call (name, targs), f_ret) in
+      ) call_args proto_args in
+      T_Call (name, targs), proto_ret) in
   aux
 
 

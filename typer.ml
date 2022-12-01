@@ -229,19 +229,22 @@ and type_block var_env_init fct_env_init expect in_loop raw_block =
           fail ("variable '" ^ name ^ "' declared void");
 
         take_name name;
+        let init_ty = (match dv.dv_init with
+        | None -> None
+        | Some e_raw ->
+          let e_ty = type_expr !var_env !fct_env e_raw in
+          if not (equiv ty e_ty.etyp) then
+            f2t "incompatible types when initializing type '%s' using type '%s'" ty e_ty.etyp;
+          Some e_ty) in
+        (* On ajoute dans l'env *après* le typage de l'init *)
+        (* pour éviter int x = f(x); *)
         var_env := Smap.add name ty !var_env;
-        (match dv.dv_init with
-          | None -> T_Var { t_dv_var = (ty, name); t_dv_init = None }
-          | Some e_raw ->
-            let e_ty = type_expr !var_env !fct_env e_raw in
-            if not (equiv ty e_ty.etyp) then
-              f2t "incompatible types when initializing type '%s' using type '%s'" ty e_ty.etyp;
-            T_Var { t_dv_var = (ty, name); t_dv_init = Some e_ty })
+        T_Var { t_dv_var = (ty, name); t_dv_init = init_ty }
 
     | Fct df ->
         let name = df.df_id in
         take_name df.df_id;
-        (* Ajouter son proto dans l'env avant de la typer *)
+        (* Ajouter son prototype dans l'env *avant* de la typer *)
         (* permettra de gérer la récursion correctement *)
         (* Elle pourra être shadow par une de ses fonctions imbriquées *)
         fct_env := Smap.add name (ftyp_of_decl df) !fct_env;

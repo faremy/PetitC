@@ -107,3 +107,8 @@ let binop_str = function
 | Le -> "<="
 | Gt -> ">"
 | Ge -> ">="
+
+let loc_decl = function
+| Stmt s -> s.sloc
+| Var v -> v.dv_loc
+| Fct f -> f.df_loc

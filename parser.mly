@@ -97,9 +97,9 @@ stmt_desc:
 |	e = expr; SEMICOLON { Expr e }
 |	IF; LPAR; e = expr; RPAR; s1 = stmt { Cond (e, s1, dummy_stmt nothing) } %prec IF
 |	IF; LPAR; e = expr; RPAR; s1 = stmt; ELSE; s2 = stmt { Cond (e, s1, s2) }
-|	WHILE; LPAR; e = expr; RPAR; s = stmt { For (None, Some e, []) }
+|	WHILE; LPAR; e = expr; RPAR; s = stmt { For (None, Some e, [], s) }
 |	FOR; LPAR; v = option(decl_var); SEMICOLON; e = option(expr); SEMICOLON; es = separated_list(COMMA, expr); RPAR; s = stmt
-	{ For (v, e, es) }
+	{ For (v, e, es, s) }
 |	b = block { Block b }
 |	RETURN; e = option(expr); SEMICOLON { Return e }
 |	BREAK; SEMICOLON { Break }

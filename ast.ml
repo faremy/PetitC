@@ -57,7 +57,7 @@ and stmt_desc =
 | Expr of expr
 | Block of decl list
 | Cond of expr * stmt * stmt (* pas de else = nothing *)
-| For of (decl_var option) * (expr option) * (expr list)
+| For of (decl_var option) * (expr option) * (expr list) * stmt
 | Return of expr option
 | Break
 | Continue

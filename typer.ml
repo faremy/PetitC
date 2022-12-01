@@ -4,7 +4,8 @@ open Typed_ast
 exception Typing_Error of loc * string
 
 module Smap = Map.Make(String)
-type venv = typ Smap.t and fenv = ftyp Smap.t
+module Sset = Set.Make(String)
+type venv = typ Smap.t and fenv = ftyp Smap.t and sset = Sset.t
 
 let lvalue e = match e.edesc with
 | Ident _ -> true
@@ -165,7 +166,7 @@ let rec type_stmt var_env fct_env expect in_loop typing =
 
   match typing.sdesc with
   | Expr e_raw -> T_Expr (aux_expr e_raw)
-  | Block b -> T_Block (type_block var_env fct_env Smap.empty expect in_loop b)
+  | Block b -> T_Block (type_block var_env fct_env expect in_loop b)
 
   | Return None ->
       if expect <> Void then
@@ -204,8 +205,8 @@ let rec type_stmt var_env fct_env expect in_loop typing =
       if equiv c_ty.etyp Void then
         fail "void value not ignored as it ought to be";
       T_For (c_ty, es_ty, s_ty)
-and type_block var_env fct_env init_env expect in_loop b =
-  let env_block = ref init_env in
+and type_block var_env fct_env expect in_loop b =
+  let taken_names = ref Sset.empty in
 
   let type_decl var_env fct_env rev_t_block (typing : decl) =
     let fail msg = raise (Typing_Error (loc_decl typing, msg)) in
@@ -217,8 +218,8 @@ and type_block var_env fct_env init_env expect in_loop b =
         if equiv ty Void then
           fail ("variable '" ^ name ^ "' declared void");
 
-        if Smap.mem name !env_block then failwith "adkaosda";
-        env_block := Smap.add name () !env_block;
+        if Sset.mem name !taken_names then failwith "adkaosda";
+        taken_names := Sset.add name !taken_names;
 
         (Smap.add name ty var_env), fct_env, (begin
         match dv.dv_init with

@@ -260,4 +260,18 @@ and type_block var_env_init fct_env_init expect in_loop raw_block =
   List.map type_decl raw_block
 
 and type_fct var_env fct_env typing =
-  failwith "todo type_fct"
+  let fail msg = raise (Typing_Error (typing.df_loc, msg)) in
+  let check seen arg =
+    (* TODO: Il faudrait donner la loc du param mais on ne l'a pas retenu :(( *)
+    let name = snd arg in
+    if Sset.mem name seen then fail ("redefinition of parameter '" ^ name ^ "'");
+    Sset.add name seen in
+  ignore (List.fold_left check Sset.empty typing.df_args);
+  let block_ty = type_block var_env fct_env typing.df_ret false typing.df_body in
+  {
+    t_df_ret = typing.df_ret;
+    t_df_id = typing.df_id;
+    t_df_args = typing.df_args;
+    t_df_body = block_ty;
+  }
+

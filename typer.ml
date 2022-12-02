@@ -4,8 +4,7 @@ open Typed_ast
 exception Typing_Error of loc * string
 
 module Smap = Map.Make(String)
-module Sset = Set.Make(String)
-type venv = typ Smap.t and fenv = ftyp Smap.t and sset = Sset.t
+type venv = typ Smap.t and fenv = ftyp Smap.t
 
 let lvalue e = match e.edesc with
 | Ident _ -> true
@@ -213,11 +212,10 @@ let rec type_stmt var_env fct_env expect in_loop typing =
         fail "void value not ignored as it ought to be";
       T_For (c_ty, es_ty, s_ty)
 
-and type_block var_env_init fct_env_init expect in_loop raw_block =
+and type_block ?(block_env = ref Smap.empty) var_env_init fct_env_init expect in_loop raw_block =
   (* On a besoin de persistence uniquement pour rentrer dans *)
   (* un sous-bloc : dans ce cas appel récursif à type_block *)
   (* et type_decl aura accès à de nouvelles références *)
-  let taken_names = ref Sset.empty in
   let var_env = ref var_env_init and fct_env = ref fct_env_init in
 
   let type_decl typing =
@@ -225,8 +223,8 @@ and type_block var_env_init fct_env_init expect in_loop raw_block =
     let f2t s t1 t2 = fail (Format.sprintf s (typ_str t1) (typ_str t2)) in
     (* Empêche une redéfinition dans le même bloc *)
     let take name =
-      if Sset.mem name !taken_names then fail ("redefinition of '" ^ name ^ "'")
-      else taken_names := Sset.add name !taken_names in
+      if Smap.mem name !block_env then fail ("redefinition of '" ^ name ^ "'")
+      else block_env := Smap.add name Void !block_env in
     
     match typing with
     | Stmt s -> T_Stmt (type_stmt !var_env !fct_env expect in_loop s)
@@ -261,17 +259,20 @@ and type_block var_env_init fct_env_init expect in_loop raw_block =
 
 and type_fct var_env fct_env typing =
   let fail msg = raise (Typing_Error (typing.df_loc, msg)) in
-  let parse_params param_env param =
+  let parse_sig df_env param =
     (* TODO: Il faudrait donner la loc du param mais on ne l'a pas retenu :(( *)
     let ty, name = param in
-    if Smap.mem name param_env then
+    if Smap.mem name df_env then
       fail ("redefinition of parameter '" ^ name ^ "'");
-    Smap.add name ty param_env in
-  let param_env = List.fold_left parse_params Smap.empty typing.df_args in
-  (* Chaque binding de param_env est ajouté dans var_env *)
+    Smap.add name ty df_env in
+
+  let df_env : venv = List.fold_left parse_sig Smap.empty typing.df_args in
+  (* Chaque binding de df_env est ajouté dans var_env *)
   (* les paramètres shadow les variables globales *)
-  let new_ve = Smap.fold Smap.add param_env var_env in
-  let block_ty = type_block new_ve fct_env typing.df_ret false typing.df_body in
+  let new_ve = Smap.fold Smap.add df_env var_env in
+  (* Les paramètres ne peuvent être shadow dans le bloc principal du corps *)
+  (* d'où block_env initialisé à df_env (bloque les noms des paramètres) *)
+  let block_ty = type_block new_ve fct_env typing.df_ret false typing.df_body ~block_env:(ref df_env) in
   {
     t_df_ret = typing.df_ret;
     t_df_id = typing.df_id;

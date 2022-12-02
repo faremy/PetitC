@@ -1,4 +1,4 @@
-F = "1b"
+F = "2b"
 build:
 	dune build
 clean:

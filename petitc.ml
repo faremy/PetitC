@@ -3,7 +3,7 @@
 
 open Format
 open Lexing
-open Ast
+open Typed_ast
 
 let usage = "usage: petitc [options] file.c"
 
@@ -44,9 +44,10 @@ let () =
   try
     (* dumb_parser () *)
     let arbre = Parser.prog Lexer.token lb in
-    Format.eprintf "%a@." pp_prog arbre;
     if !parse_only then exit 0;
-    (*Interp.file f*)
+    let t_ast = Typer.type_prog arbre in
+    Format.eprintf "%a@." pp_t_prog t_ast;
+    if !type_only then exit 0
   with
   | Lexer.Lexing_Error s ->
     report (lexeme_start_p lb, lexeme_end_p lb);

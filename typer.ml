@@ -275,3 +275,21 @@ and type_fct var_env fct_env typing =
     t_df_body = block_ty;
   }
 
+and type_prog (p_raw : prog) =
+  let malloc = {
+    df_ret = Pointer Void;
+    df_id = "malloc";
+    df_args = [Int, "n"];
+    df_body = [];
+    df_loc = dummy_loc
+  }
+  and putchar = {
+    df_ret = Int;
+    df_id = "putchar";
+    df_args = [Int, "c"];
+    df_body = [];
+    df_loc = dummy_loc
+  } in
+  let b_raw = List.map (fun df -> Fct df) (malloc :: putchar :: p_raw) in
+  let b_ty = type_block Smap.empty Smap.empty Void false b_raw in
+  List.map (fun d -> match d with | T_Fct df -> df | _ -> failwith "impossible") b_ty

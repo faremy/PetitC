@@ -32,8 +32,10 @@ and t_stmt =
 | T_Continue
 
 and t_prog = t_decl_fct list
+[@@deriving show]
 
 let make_te (desc, tau) =
   { t_edesc = desc; etyp = tau }
 
 let t_nothing = T_Block []
+

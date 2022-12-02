@@ -281,6 +281,7 @@ and type_fct var_env fct_env typing =
   }
 
 and type_prog (p_raw : prog) =
+  let fail msg = raise (Typing_Error(dummy_loc, msg)) in
   let malloc = {
     df_ret = Pointer Void;
     df_id = "malloc";
@@ -295,6 +296,12 @@ and type_prog (p_raw : prog) =
     df_body = [];
     df_loc = dummy_loc
   } in
+  let user_main = try List.find (fun df -> df.df_id = "main") p_raw
+    with Not_found -> fail "missing main function" in
+  if not (equiv Int user_main.df_ret) then
+    fail "function main should return int";
+  if user_main.df_args <> [] then
+    fail "function main should have no parameters";
   let b_raw = List.map (fun df -> Fct df) (malloc :: putchar :: p_raw) in
   let b_ty = type_block Smap.empty Smap.empty Void false b_raw in
   List.map (fun d -> match d with | T_Fct df -> df | _ -> failwith "impossible") b_ty

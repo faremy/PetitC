@@ -261,13 +261,17 @@ and type_block var_env_init fct_env_init expect in_loop raw_block =
 
 and type_fct var_env fct_env typing =
   let fail msg = raise (Typing_Error (typing.df_loc, msg)) in
-  let check seen arg =
+  let parse_params param_env param =
     (* TODO: Il faudrait donner la loc du param mais on ne l'a pas retenu :(( *)
-    let name = snd arg in
-    if Sset.mem name seen then fail ("redefinition of parameter '" ^ name ^ "'");
-    Sset.add name seen in
-  ignore (List.fold_left check Sset.empty typing.df_args);
-  let block_ty = type_block var_env fct_env typing.df_ret false typing.df_body in
+    let ty, name = param in
+    if Smap.mem name param_env then
+      fail ("redefinition of parameter '" ^ name ^ "'");
+    Smap.add name ty param_env in
+  let param_env = List.fold_left parse_params Smap.empty typing.df_args in
+  (* Chaque binding de param_env est ajouté dans var_env *)
+  (* les paramètres shadow les variables globales *)
+  let new_ve = Smap.fold Smap.add param_env var_env in
+  let block_ty = type_block new_ve fct_env typing.df_ret false typing.df_body in
   {
     t_df_ret = typing.df_ret;
     t_df_id = typing.df_id;

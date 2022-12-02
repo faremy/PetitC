@@ -18,6 +18,8 @@ let equiv u v = match u, v with
   | Pointer t1, Pointer t2 when (t1 = Void || t2 = Void) -> true (* void* = t* *)
   | _ -> false
 
+(* On substituant bool par int, equiv Int devient = Int ce qui*)
+(* permet d'utiliser des filtres naturels : voir binop Plus et Minus*)
 let bool_eradictor = function
   | Bool -> Int
   | t -> t
@@ -146,7 +148,7 @@ let rec type_expr (var_env : venv) (fct_env : fenv) typing =
   (* Appel de fonction *)
   | Call (name, call_args) ->
     let proto_ret, proto_args = (try Smap.find name fct_env
-    with Not_found -> fail (Format.sprintf "function '%s' is undeclared" name)) in
+    with Not_found -> f1s "function '%s' is undeclared" name) in
     let nb_call = List.length call_args and nb_proto = List.length proto_args in
     if nb_call > nb_proto then
       f1s "too many arguments to function '%s'" name;
@@ -222,8 +224,8 @@ and type_block var_env_init fct_env_init expect in_loop raw_block =
     let fail msg = raise (Typing_Error (loc_decl typing, msg)) in
     let f2t s t1 t2 = fail (Format.sprintf s (typ_str t1) (typ_str t2)) in
     (* Empêche une redéfinition dans le même bloc *)
-    let take_name name =
-      if Sset.mem name !taken_names then fail (Format.sprintf "redefinition of '%s'" name)
+    let take name =
+      if Sset.mem name !taken_names then fail ("redefinition of '" ^ name ^ "'")
       else taken_names := Sset.add name !taken_names in
     
     match typing with
@@ -233,7 +235,7 @@ and type_block var_env_init fct_env_init expect in_loop raw_block =
         if equiv ty Void then
           fail ("variable '" ^ name ^ "' declared void");
 
-        take_name name;
+        take name;
         let init_ty = (match dv.dv_init with
         | None -> None
         | Some e_raw ->
@@ -248,7 +250,7 @@ and type_block var_env_init fct_env_init expect in_loop raw_block =
 
     | Fct df ->
         let name = df.df_id in
-        take_name df.df_id;
+        take name;
         (* Ajouter son prototype dans l'env *avant* de la typer *)
         (* permettra de gérer la récursion correctement *)
         (* Elle pourra être shadow par une de ses fonctions imbriquées *)

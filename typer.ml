@@ -172,15 +172,15 @@ let rec type_expr (env : tenv) typing =
     T_Call (name, targs), proto_ret)
 
 
-let rec type_stmt var_env fct_env expect in_loop typing =
+let rec type_stmt (env : tenv) expect in_loop typing =
   let fail msg = raise (Typing_Error (typing.sloc, msg)) in
   let f2t s t1 t2 = fail (Format.sprintf s (typ_str t1) (typ_str t2))
-  and aux_expr = type_expr var_env fct_env
-  and aux_stmt = type_stmt var_env fct_env expect in
+  and aux_expr = type_expr env
+  and aux_stmt = type_stmt env expect in
 
   match typing.sdesc with
   | Expr e_raw -> T_Expr (aux_expr e_raw)
-  | Block b -> T_Block (type_block var_env fct_env expect in_loop b)
+  | Block b -> T_Block (type_block env expect in_loop b)
 
   | Return None ->
       if expect <> Void then

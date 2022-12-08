@@ -277,7 +277,7 @@ and type_fct env typing =
   let df_env = List.fold_left parse_sig Smap.empty typing.df_args in
   (* Chaque binding de df_env est ajouté dans var_env *)
   (* les paramètres shadow les variables globales *)
-  let new_env = Smap.fold Smap.add df_env df_env in
+  let new_env = Smap.fold Smap.add df_env env in
   (* Les paramètres ne peuvent être shadow dans le bloc principal du corps *)
   (* d'où block_env initialisé à df_env (bloque les noms des paramètres) *)
   let block_ty = type_block new_env typing.df_ret false typing.df_body ~block_env:(ref df_env) in
@@ -311,5 +311,5 @@ and type_prog (p_raw : prog) =
   if user_main.df_args <> [] then
     fail user_main.df_loc "function main must have no parameters";
   let b_raw = List.map (fun df -> Fct df) (malloc :: putchar :: p_raw) in
-  let b_ty = type_block Smap.empty Smap.empty Void false b_raw in
+  let b_ty = type_block Smap.empty Void false b_raw in
   List.map (function | T_Fct df -> df | _ -> failwith "impossible") b_ty

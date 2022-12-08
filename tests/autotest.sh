@@ -19,7 +19,7 @@ echo
 test_gcc() {
 for f in syntax/bad/*.c; do
     if gcc -c $f > /dev/null 2>&1 ; then
-      echo "succès de gcc -c sur $f"
+      echo "succÃ¨s de gcc -c sur $f"
     fi
 done
 
@@ -29,7 +29,7 @@ for f in typing/good/*.c exec/*.c exec-fail/*.c; do
 done
 for f in typing/bad/*.c; do
     if gcc -c $f > /dev/null 2>&1 ; then
-      echo "succès de gcc -c sur $f"
+      echo "succÃ¨s de gcc -c sur $f"
     fi
 done
 for f in exec/*.c; do
@@ -41,7 +41,7 @@ for f in exec/*.c; do
           echo "mauvaise sortie de gcc sur $f"
       fi
     else
-      echo "échec de gcc -c sur $f"
+      echo "Ã©chec de gcc -c sur $f"
     fi
 done
 }
@@ -78,7 +78,7 @@ for f in syntax/bad/*.c; do
     case $? in
 	"0")
 	echo
-	echo "ECHEC sur "$f" (devrait échouer)";;
+	echo "ECHEC sur "$f" (devrait Ã©chouer)";;
 	"1") score=`expr $score + 1`;;
 	*)
 	echo
@@ -113,7 +113,7 @@ percent=`expr 100 \* $score / $max`;
 
 echo -n "Syntaxe : $score/$max : $percent%"; }
 
-# partie 2 : tests d'analyse sémantique
+# partie 2 : tests d'analyse sÃ©mantique
 
 
 partie2 () {
@@ -136,7 +136,7 @@ for f in typing/bad/*.c; do
     case $? in
 	"0")
 	echo
-	echo "ECHEC sur "$f" (devrait échouer)";;
+	echo "ECHEC sur "$f" (devrait Ã©chouer)";;
 	"1") score=`expr $score + 1`;;
 	*)
 	echo
@@ -173,7 +173,7 @@ echo    "Typage  : $score/$max : $percent%";
 }
 
 
-# partie 3 : tests d'exécution
+# partie 3 : tests d'exÃ©cution
 
 partie3 () {
 
@@ -217,12 +217,12 @@ for f in exec/*.c; do
 	fi
     else
 	echo
-	echo "ECHEC de la compilation sur $f (devrait réussir)"
+	echo "ECHEC de la compilation sur $f (devrait rÃ©ussir)"
     fi
 done
 echo
 
-echo "Execution conduisant à un échec"
+echo "Execution conduisant Ã  un Ã©chec"
 echo "-------------------------------"
 
 for f in exec-fail/*.c; do
@@ -238,14 +238,14 @@ for f in exec-fail/*.c; do
 	score_comp=`expr $score_comp + 1`;
 	if ./a.out > out; then
 	    echo
-	    echo "ECHEC : devrait échouer sur $f"
+	    echo "ECHEC : devrait Ã©chouer sur $f"
 	else
 	    score_test=`expr $score_test + 1`;
 	    score_out=`expr $score_out + 1`;
 	fi
     else
 	echo
-	echo "ECHEC de la compilation sur $f (devrait réussir)"
+	echo "ECHEC de la compilation sur $f (devrait rÃ©ussir)"
     fi
 done
 
@@ -290,15 +290,15 @@ case $option in
         test_gcc;;
     * )
         echo "usage : $0 <option> <compilo>"
-        echo "spécifier une option parmi : "
+        echo "spÃ©cifier une option parmi : "
         echo "-1      : tester la partie 1"
         echo "-2      : tester la partie 2"
         echo "-3      : tester la partie 3"
         echo "-all    : tout tester"
-        echo "-1b     : tester la partie 1 avec fonctions imbriquées"
-        echo "-2b     : tester la partie 2 avec fonctions imbriquées"
-        echo "-3b     : tester la partie 3 avec fonctions imbriquées"
-        echo "-allb   : tout tester avec fonctions imbriquées";;
+        echo "-1b     : tester la partie 1 avec fonctions imbriquÃ©es"
+        echo "-2b     : tester la partie 2 avec fonctions imbriquÃ©es"
+        echo "-3b     : tester la partie 3 avec fonctions imbriquÃ©es"
+        echo "-allb   : tout tester avec fonctions imbriquÃ©es";;
 
 esac
 echo

@@ -2,4 +2,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-int main() { int x; int y; y = --x = 1; }
+void f(int *x) {}
+int main() { bool *p; f(p); }
+

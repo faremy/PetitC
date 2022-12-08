@@ -6,7 +6,7 @@ and fun_ident = { name: string; f_depth: int; }
 and t_decl_fct = {
   t_df_ret: typ;
   t_df_id: fun_ident;
-  t_df_args: var list;
+  t_df_args: typ list;
   t_df_body: t_decl list;
 }
 and t_decl_var = {

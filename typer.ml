@@ -284,7 +284,7 @@ and type_fct env typing =
   {
     t_df_ret = typing.df_ret;
     t_df_id = dummy_fid typing.df_id;
-    t_df_args = typing.df_args;
+    t_df_args = List.map fst typing.df_args;
     t_df_body = block_ty;
   }
 

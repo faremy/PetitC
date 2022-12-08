@@ -26,8 +26,8 @@ let bool_eradictor = function
   | t -> t
 let be2 e1 e2 = (bool_eradictor e1.etyp, bool_eradictor e2.etyp)
 
-let rec type_expr (var_env : venv) (fct_env : fenv) typing =
-  let aux = type_expr var_env fct_env in
+let rec type_expr (env : tenv) typing =
+  let aux = type_expr env in
   let fail msg =
     raise (Typing_Error (typing.eloc, msg)) in
   let f1t s t = fail (Format.sprintf s (typ_str t))
@@ -47,8 +47,11 @@ let rec type_expr (var_env : venv) (fct_env : fenv) typing =
 
   (* Variables *)
   | Ident s -> begin
-      try T_Ident s, Smap.find s var_env
-      with Not_found -> f1s "variable '%s' is undeclared" s
+      try begin
+        match Smap.find s env with
+        | Varid t -> T_Ident s, t
+        | Funid _ -> f1s "identifier '%s' refers to a function (used as a variable)" s
+      end with Not_found -> f1s "variable '%s' is undeclared" s
     end
 
   (* Sizeof *)
@@ -148,8 +151,11 @@ let rec type_expr (var_env : venv) (fct_env : fenv) typing =
 
   (* Appel de fonction *)
   | Call (name, call_args) ->
-    let proto_ret, proto_args = (try Smap.find name fct_env
-    with Not_found -> f1s "function '%s' is undeclared" name) in
+    let proto_ret, proto_args = (try begin
+      match Smap.find name env with
+      | Varid _ -> f1s "identifier '%s' refers to a variable (used as a function)" name
+      | Funid t -> t
+    end with Not_found -> f1s "function '%s' is undeclared" name) in
     let nb_call = List.length call_args and nb_proto = List.length proto_args in
     if nb_call > nb_proto then
       f1s "too many arguments to function '%s'" name;

@@ -4,7 +4,7 @@ open Typed_ast
 exception Typing_Error of loc * string
 
 module Smap = Map.Make(String)
-type envid = Varid of typ | Funid of ftyp
+type envid = Varid of var_ident * typ | Funid of fun_ident * ftyp
 type tenv = envid Smap.t
 
 let lvalue e = match e.edesc with
@@ -48,7 +48,7 @@ let rec type_expr (env : tenv) typing =
   | Ident s -> begin
       try begin
         match Smap.find s env with
-        | Varid t -> T_Ident s, t
+        | Varid (id, t) -> T_Ident id, t
         | Funid _ -> f1s "identifier '%s' refers to a function (used as a variable)" s
       end with Not_found -> f1s "variable '%s' is undeclared" s
     end
@@ -150,10 +150,10 @@ let rec type_expr (env : tenv) typing =
 
   (* Appel de fonction *)
   | Call (name, call_args) ->
-    let proto_ret, proto_args = (try begin
+    let id, proto_ret, proto_args = (try begin
       match Smap.find name env with
       | Varid _ -> f1s "identifier '%s' refers to a variable (used as a function)" name
-      | Funid t -> t
+      | Funid (id, t) -> id, fst t, snd t
     end with Not_found -> f1s "function '%s' is undeclared" name) in
     let nb_call = List.length call_args and nb_proto = List.length proto_args in
     if nb_call > nb_proto then
@@ -168,7 +168,7 @@ let rec type_expr (env : tenv) typing =
         (*Cannot use fail because localisation is the one of the argument*)
       te
     ) call_args proto_args in
-    T_Call (name, targs), proto_ret)
+    T_Call (id, targs), proto_ret)
 
 
 let rec type_stmt (env : tenv) expect in_loop typing =
@@ -230,7 +230,7 @@ and type_block ?(block_env = ref Smap.empty) env_init expect in_loop raw_block =
     let f2t s t1 t2 = fail (Format.sprintf s (typ_str t1) (typ_str t2)) in
     (* Empêche une redéfinition dans le même bloc *)
     let take name =
-      let osef_val = (Varid Void) in
+      let osef_val = Varid (dummy_vid, Void) in
       if Smap.mem name !block_env then fail ("redefinition of '" ^ name ^ "'")
       else block_env := Smap.add name osef_val !block_env in
     
@@ -251,8 +251,8 @@ and type_block ?(block_env = ref Smap.empty) env_init expect in_loop raw_block =
           Some e_ty) in
         (* On ajoute dans l'env *après* le typage de l'init *)
         (* pour éviter int x = f(x); *)
-        env := Smap.add name (Varid ty) !env;
-        T_Var { t_dv_var = (ty, name); t_dv_init = init_ty }
+        env := Smap.add name (Varid (dummy_vid, ty)) !env;
+        T_Var { t_dv_typ = ty; t_dv_id = dummy_vid; t_dv_init = init_ty }
 
     | Fct df ->
         let name = df.df_id in
@@ -260,7 +260,7 @@ and type_block ?(block_env = ref Smap.empty) env_init expect in_loop raw_block =
         (* Ajouter son prototype dans l'env *avant* de la typer *)
         (* permettra de gérer la récursion correctement *)
         (* Elle pourra être shadow par une de ses fonctions imbriquées *)
-        env := Smap.add name (Funid (ftyp_of_decl df)) !env;
+        env := Smap.add name (Funid (dummy_fid name, ftyp_of_decl df)) !env;
         T_Fct (type_fct !env df)
   in
   List.map type_decl raw_block
@@ -272,7 +272,7 @@ and type_fct env typing =
     let ty, name = param in
     if Smap.mem name df_env then
       fail ("redefinition of parameter '" ^ name ^ "'");
-    Smap.add name (Varid ty) df_env in
+    Smap.add name (Varid (dummy_vid, ty)) df_env in
 
   let df_env = List.fold_left parse_sig Smap.empty typing.df_args in
   (* Chaque binding de df_env est ajouté dans var_env *)
@@ -283,7 +283,7 @@ and type_fct env typing =
   let block_ty = type_block new_env typing.df_ret false typing.df_body ~block_env:(ref df_env) in
   {
     t_df_ret = typing.df_ret;
-    t_df_id = typing.df_id;
+    t_df_id = dummy_fid typing.df_id;
     t_df_args = typing.df_args;
     t_df_body = block_ty;
   }

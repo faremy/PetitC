@@ -1,21 +1,25 @@
 open Ast
 
-type t_decl_fct = {
+type var_ident = { offset: int; v_depth: int; }
+and fun_ident = { name: string; f_depth: int; }
+
+and t_decl_fct = {
   t_df_ret: typ;
-  t_df_id: string;
+  t_df_id: fun_ident;
   t_df_args: var list;
   t_df_body: t_decl list;
 }
 and t_decl_var = {
-  t_dv_var: var;
+  t_dv_typ: typ;
+  t_dv_id: var_ident;
   t_dv_init: t_expr option;
 }
 and t_decl = T_Fct of t_decl_fct | T_Var of t_decl_var | T_Stmt of t_stmt
 
 and t_expr_desc =
 | T_Const of const
-| T_Ident of string
-| T_Call of string * t_expr list
+| T_Ident of var_ident
+| T_Call of fun_ident * t_expr list
 | T_Unop of unop * t_expr
 | T_Binop of binop * t_expr * t_expr
 | T_Assign of t_expr * t_expr
@@ -38,4 +42,5 @@ let make_te (desc, tau) =
   { t_edesc = desc; etyp = tau }
 
 let t_nothing = T_Block []
-
+let dummy_vid = { offset = 0; v_depth = 0 }
+let dummy_fid s = { name = s; f_depth = 0 }

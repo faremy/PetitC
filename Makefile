@@ -4,6 +4,6 @@ build:
 clean:
 	dune clean
 autotest: build
-	cd tests; ./autotest.sh -$(F) ../_build/default/petitc.exe
+	cd tests; ./autotest.sh -$(F) ../petitc
 
 .PHONY: build clean autotest

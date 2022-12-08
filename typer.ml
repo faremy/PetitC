@@ -4,6 +4,8 @@ open Typed_ast
 exception Typing_Error of loc * string
 
 module Smap = Map.Make(String)
+type envid = Varid of typ | Funid of ftyp
+type tenv = envid Smap.t
 type venv = typ Smap.t and fenv = ftyp Smap.t
 
 let lvalue e = match e.edesc with

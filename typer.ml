@@ -200,7 +200,7 @@ let rec type_stmt (env : tenv) expect in_loop typing =
       and s2_ty = aux_stmt in_loop s2_raw in
 
       if equiv c_ty.etyp Void then
-        fail "void value not ignored as it ought to be";
+        gfail c_raw.eloc "void value not ignored as it ought to be";
       T_Cond (c_ty, s1_ty, s2_ty)
 
   | Break ->
@@ -218,7 +218,7 @@ let rec type_stmt (env : tenv) expect in_loop typing =
       and s_ty = aux_stmt true s_raw in
 
       if equiv c_ty.etyp Void then
-        fail "void value not ignored as it ought to be";
+        gfail c_raw.eloc "void value not ignored as it ought to be";
       T_For (c_ty, es_ty, s_ty)
 
 and type_block ?(be_init = Sset.empty) env_init expect in_loop raw_block =

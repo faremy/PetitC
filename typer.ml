@@ -267,14 +267,18 @@ and type_block ?(block_env = ref Smap.empty) env_init expect in_loop raw_block =
 
 and type_fct env typing =
   let fail msg = raise (Typing_Error (typing.df_loc, msg)) in
-  let parse_sig df_env param =
+  let parse_sig (curoff, df_env) param =
     (* TODO: Il faudrait donner la loc du param mais on ne l'a pas retenu :(( *)
     let ty, name = param in
     if Smap.mem name df_env then
       fail ("redefinition of parameter '" ^ name ^ "'");
-    Smap.add name (Varid (dummy_vid, ty)) df_env in
+    let vid = {
+      offset = curoff;
+      v_depth = -42
+    } in
+    curoff - (sizeof ty), Smap.add name (Varid (vid, ty)) df_env in
 
-  let df_env = List.fold_left parse_sig Smap.empty typing.df_args in
+  let _, df_env = List.fold_left parse_sig (begin_offset_arguments, Smap.empty) typing.df_args in
   (* Chaque binding de df_env est ajouté dans var_env *)
   (* les paramètres shadow les variables globales *)
   let new_env = Smap.fold Smap.add df_env env in

@@ -4,6 +4,7 @@ open Typed_ast
 exception Typing_Error of loc * string
 
 module Smap = Map.Make(String)
+module Sset = Set.Make(String)
 type envid = Varid of var_ident * typ | Funid of fun_ident * ftyp
 type tenv = envid Smap.t
 
@@ -219,20 +220,23 @@ let rec type_stmt (env : tenv) expect in_loop typing =
         fail "void value not ignored as it ought to be";
       T_For (c_ty, es_ty, s_ty)
 
-and type_block ?(block_env = ref Smap.empty) env_init expect in_loop raw_block =
+and type_block ?(be_init = Sset.empty) env_init expect in_loop raw_block =
   (* On a besoin de persistence uniquement pour rentrer dans *)
   (* un sous-bloc : dans ce cas appel récursif à type_block *)
   (* et type_decl aura accès à de nouvelles références *)
   let env = ref env_init in
+  (* Set des noms du bloc actuel, à ne pas shadow *)
+  (* Quand type_fct appelle type_block, il bloque les params *)
+  let block_env = ref be_init in
 
   let type_decl typing =
     let fail msg = raise (Typing_Error (loc_decl typing, msg)) in
     let f2t s t1 t2 = fail (Format.sprintf s (typ_str t1) (typ_str t2)) in
     (* Empêche une redéfinition dans le même bloc *)
     let take name =
-      let osef_val = Varid (dummy_vid, Void) in
-      if Smap.mem name !block_env then fail ("redefinition of '" ^ name ^ "'")
-      else block_env := Smap.add name osef_val !block_env in
+      if Sset.mem name !block_env then
+        fail ("redefinition of '" ^ name ^ "'")
+      else block_env := Sset.add name !block_env in
     
     match typing with
     | Stmt s -> T_Stmt (type_stmt !env expect in_loop s)
@@ -283,8 +287,9 @@ and type_fct env typing =
   (* les paramètres shadow les variables globales *)
   let new_env = Smap.fold Smap.add df_env env in
   (* Les paramètres ne peuvent être shadow dans le bloc principal du corps *)
-  (* d'où block_env initialisé à df_env (bloque les noms des paramètres) *)
-  let block_ty = type_block new_env typing.df_ret false typing.df_body ~block_env:(ref df_env) in
+  (* d'où block_env initialisé à param_names (bloque les noms des paramètres) *)
+  let param_names = Smap.fold (fun k _ a -> Sset.add k a) df_env Sset.empty in
+  let block_ty = type_block new_env typing.df_ret false typing.df_body ~be_init:param_names in
   {
     t_df_ret = typing.df_ret;
     t_df_id = dummy_fid typing.df_id;

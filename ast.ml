@@ -29,7 +29,7 @@ and binop =
 | And | Or
 | Plus | Minus | Mul | Div | Mod
 
-and var = typ * string
+and var = typ * string * loc
 and decl_fct = {
   df_ret: typ;
   df_id: string;
@@ -114,5 +114,7 @@ let loc_decl = function
 | Var v -> v.dv_loc
 | Fct f -> f.df_loc
 
+let typ_of_var : var -> typ =
+  fun (t, _, _) -> t
 let ftyp_of_decl : decl_fct -> ftyp =
-  fun df -> df.df_ret, List.map fst df.df_args
+  fun df -> df.df_ret, List.map typ_of_var df.df_args

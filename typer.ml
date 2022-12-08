@@ -241,7 +241,7 @@ and type_block ?(be_init = Sset.empty) env_init expect in_loop raw_block =
     match typing with
     | Stmt s -> T_Stmt (type_stmt !env expect in_loop s)
     | Var dv ->
-        let ty, name = dv.dv_var in
+        let ty, name, _ = dv.dv_var in
         if equiv ty Void then
           fail ("variable '" ^ name ^ "' declared void");
 
@@ -270,12 +270,11 @@ and type_block ?(be_init = Sset.empty) env_init expect in_loop raw_block =
   List.map type_decl raw_block
 
 and type_fct env typing =
-  let fail msg = raise (Typing_Error (typing.df_loc, msg)) in
   let parse_sig (curoff, df_env) param =
-    (* TODO: Il faudrait donner la loc du param mais on ne l'a pas retenu :(( *)
-    let ty, name = param in
-    if Smap.mem name df_env then
-      fail ("redefinition of parameter '" ^ name ^ "'");
+    let ty, name, ploc = param in
+    if Smap.mem name df_env then begin
+      let msg = ("redefinition of parameter '" ^ name ^ "'") in
+      raise (Typing_Error(ploc, msg)) end;
     let vid = {
       offset = curoff;
       v_depth = -42
@@ -293,7 +292,7 @@ and type_fct env typing =
   {
     t_df_ret = typing.df_ret;
     t_df_id = dummy_fid typing.df_id;
-    t_df_args = List.map fst typing.df_args;
+    t_df_args = List.map typ_of_var typing.df_args;
     t_df_body = block_ty;
   }
 
@@ -302,14 +301,14 @@ and type_prog (p_raw : prog) =
   let malloc = {
     df_ret = Pointer Void;
     df_id = "malloc";
-    df_args = [Int, "n"];
+    df_args = [Int, "n", dummy_loc];
     df_body = [];
     df_loc = dummy_loc
   }
   and putchar = {
     df_ret = Int;
     df_id = "putchar";
-    df_args = [Int, "c"];
+    df_args = [Int, "c", dummy_loc];
     df_body = [];
     df_loc = dummy_loc
   } in

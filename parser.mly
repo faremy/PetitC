@@ -61,7 +61,7 @@ typ:
 |	TVOID { Void }
 |	t = typ; MUL { Pointer t }
 var:
-|	t = typ; id = IDENT; { (t, id) }
+|	t = typ; id = IDENT; { (t, id, $loc) }
 
 expr_desc:
 |	i = INT { Const (IntCst i) }

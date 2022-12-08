@@ -9,6 +9,11 @@ module Sset = Set.Make(String)
 type envid = Varid of var_ident * typ | Funid of fun_ident * ftyp
 type tenv = envid Smap.t
 
+
+let nbfun = ref 0
+let funs = ref []
+
+
 let lvalue e = match e.edesc with
 | Ident _ -> true
 | Unop (Deref, _) -> true
@@ -265,8 +270,13 @@ and type_block ?(be_init = Sset.empty) env_init expect in_loop raw_block =
         (* Ajouter son prototype dans l'env *avant* de la typer *)
         (* permettra de gérer la récursion correctement *)
         (* Elle pourra être shadow par une de ses fonctions imbriquées *)
-        env := Smap.add name (Funid (dummy_fid name, ftyp_of_decl df)) !env;
-        T_Fct (type_fct !env df)
+        let new_id = Format.sprintf "f_%d_%s" !nbfun name in
+        env := Smap.add name (Funid (dummy_fid new_id, ftyp_of_decl df)) !env;
+
+        let typ_df = type_fct !env df in
+        incr nbfun;
+        funs := typ_df :: !funs;
+        T_Fct typ_df
   in
   List.map type_decl raw_block
 
@@ -291,7 +301,7 @@ and type_fct env typing =
   let block_ty = type_block new_env typing.df_ret false typing.df_body ~be_init:param_names in
   {
     t_df_ret = typing.df_ret;
-    t_df_id = dummy_fid typing.df_id;
+    t_df_id = dummy_fid (Format.sprintf "f_%d_%s" !nbfun typing.df_id);
     t_df_args = List.map typ_of_var typing.df_args;
     t_df_body = block_ty;
   }

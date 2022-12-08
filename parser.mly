@@ -117,8 +117,10 @@ block:
 decl_var:
 |	v = var { make_dv (v, None, $loc) }
 |	v = var; ASSIGN; e = expr { make_dv (v, Some e, $loc) }
+%inline decl_fct_sig:
+|	t = typ; id = IDENT; LPAR; arg = separated_list(COMMA, var); RPAR; { (t, id, arg, $loc) }
 decl_fct:
-|	t = typ; id = IDENT; LPAR; arg = separated_list(COMMA, var); RPAR; b = block { make_df (t, id, arg, b, $loc) }
+|	s = decl_fct_sig; b = block { make_df s b }
 decl:
 |	d = decl_fct { Fct d }
 |	d = decl_var; SEMICOLON { Var d }

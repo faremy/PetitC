@@ -219,22 +219,23 @@ let rec type_stmt (env : tenv) expect in_loop typing =
         fail "void value not ignored as it ought to be";
       T_For (c_ty, es_ty, s_ty)
 
-and type_block ?(block_env = ref Smap.empty) var_env_init fct_env_init expect in_loop raw_block =
+and type_block ?(block_env = ref Smap.empty) env_init expect in_loop raw_block =
   (* On a besoin de persistence uniquement pour rentrer dans *)
   (* un sous-bloc : dans ce cas appel récursif à type_block *)
   (* et type_decl aura accès à de nouvelles références *)
-  let var_env = ref var_env_init and fct_env = ref fct_env_init in
+  let env = ref env_init in
 
   let type_decl typing =
     let fail msg = raise (Typing_Error (loc_decl typing, msg)) in
     let f2t s t1 t2 = fail (Format.sprintf s (typ_str t1) (typ_str t2)) in
     (* Empêche une redéfinition dans le même bloc *)
     let take name =
+      let osef_val = (Varid Void) in
       if Smap.mem name !block_env then fail ("redefinition of '" ^ name ^ "'")
-      else block_env := Smap.add name Void !block_env in
+      else block_env := Smap.add name osef_val !block_env in
     
     match typing with
-    | Stmt s -> T_Stmt (type_stmt !var_env !fct_env expect in_loop s)
+    | Stmt s -> T_Stmt (type_stmt !env expect in_loop s)
     | Var dv ->
         let ty, name = dv.dv_var in
         if equiv ty Void then
@@ -244,13 +245,13 @@ and type_block ?(block_env = ref Smap.empty) var_env_init fct_env_init expect in
         let init_ty = (match dv.dv_init with
         | None -> None
         | Some e_raw ->
-          let e_ty = type_expr !var_env !fct_env e_raw in
+          let e_ty = type_expr !env e_raw in
           if not (equiv ty e_ty.etyp) then
             f2t "incompatible types when initializing type '%s' using type '%s'" ty e_ty.etyp;
           Some e_ty) in
         (* On ajoute dans l'env *après* le typage de l'init *)
         (* pour éviter int x = f(x); *)
-        var_env := Smap.add name ty !var_env;
+        env := Smap.add name (Varid ty) !env;
         T_Var { t_dv_var = (ty, name); t_dv_init = init_ty }
 
     | Fct df ->
@@ -259,27 +260,27 @@ and type_block ?(block_env = ref Smap.empty) var_env_init fct_env_init expect in
         (* Ajouter son prototype dans l'env *avant* de la typer *)
         (* permettra de gérer la récursion correctement *)
         (* Elle pourra être shadow par une de ses fonctions imbriquées *)
-        fct_env := Smap.add name (ftyp_of_decl df) !fct_env;
-        T_Fct (type_fct !var_env !fct_env df)
+        env := Smap.add name (Funid (ftyp_of_decl df)) !env;
+        T_Fct (type_fct !env df)
   in
   List.map type_decl raw_block
 
-and type_fct var_env fct_env typing =
+and type_fct env typing =
   let fail msg = raise (Typing_Error (typing.df_loc, msg)) in
   let parse_sig df_env param =
     (* TODO: Il faudrait donner la loc du param mais on ne l'a pas retenu :(( *)
     let ty, name = param in
     if Smap.mem name df_env then
       fail ("redefinition of parameter '" ^ name ^ "'");
-    Smap.add name ty df_env in
+    Smap.add name (Varid ty) df_env in
 
-  let df_env : venv = List.fold_left parse_sig Smap.empty typing.df_args in
+  let df_env = List.fold_left parse_sig Smap.empty typing.df_args in
   (* Chaque binding de df_env est ajouté dans var_env *)
   (* les paramètres shadow les variables globales *)
-  let new_ve = Smap.fold Smap.add df_env var_env in
+  let new_env = Smap.fold Smap.add df_env df_env in
   (* Les paramètres ne peuvent être shadow dans le bloc principal du corps *)
   (* d'où block_env initialisé à df_env (bloque les noms des paramètres) *)
-  let block_ty = type_block new_ve fct_env typing.df_ret false typing.df_body ~block_env:(ref df_env) in
+  let block_ty = type_block new_env typing.df_ret false typing.df_body ~block_env:(ref df_env) in
   {
     t_df_ret = typing.df_ret;
     t_df_id = typing.df_id;

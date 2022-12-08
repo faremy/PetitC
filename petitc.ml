@@ -59,7 +59,7 @@ let () =
     exit 1
   | Typer.Typing_Error (l, s) ->
     report l;
-    eprintf "typing error: %s@." s;
+    eprintf "error: %s@." s;
     exit 1
   | e ->
     eprintf "Anomaly: %s\n@." (Printexc.to_string e);

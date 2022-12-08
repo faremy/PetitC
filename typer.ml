@@ -2,6 +2,7 @@ open Ast
 open Typed_ast
 
 exception Typing_Error of loc * string
+let gfail loc msg = raise (Typing_Error(loc, msg))
 
 module Smap = Map.Make(String)
 module Sset = Set.Make(String)
@@ -28,8 +29,7 @@ let be2 e1 e2 = (bool_eradictor e1.etyp, bool_eradictor e2.etyp)
 
 let rec type_expr (env : tenv) typing =
   let aux = type_expr env in
-  let fail msg =
-    raise (Typing_Error (typing.eloc, msg)) in
+  let fail = gfail typing.eloc in
   let f1t s t = fail (Format.sprintf s (typ_str t))
   and f2t s t1 t2 = fail (Format.sprintf s (typ_str t1) (typ_str t2))
   and fail_binop b t1 t2 = fail (Format.sprintf "invalid operands to binary %s (have '%s' and '%s')" (binop_str b) (typ_str t1) (typ_str t2))
@@ -163,17 +163,18 @@ let rec type_expr (env : tenv) typing =
       f1s "too few arguments to function '%s'" name;
     let targs = List.map2 (fun e t ->
       let te = aux e in
-      if not (equiv te.etyp t) then
-        raise (Typing_Error (e.eloc,
-          Format.sprintf "argument of type '%s' incompatible with expected type '%s'" (typ_str te.etyp) (typ_str t)));
-        (*Cannot use fail because localisation is the one of the argument*)
+      if not (equiv te.etyp t) then begin
+        let msg = Format.sprintf "argument of type '%s' incompatible with expected type '%s'"
+          (typ_str te.etyp) (typ_str t) in
+        gfail e.eloc msg
+      end;
       te
     ) call_args proto_args in
     T_Call (id, targs), proto_ret)
 
 
 let rec type_stmt (env : tenv) expect in_loop typing =
-  let fail msg = raise (Typing_Error (typing.sloc, msg)) in
+  let fail = gfail typing.sloc in
   let f2t s t1 t2 = fail (Format.sprintf s (typ_str t1) (typ_str t2))
   and aux_expr = type_expr env
   and aux_stmt = type_stmt env expect in
@@ -230,7 +231,7 @@ and type_block ?(be_init = Sset.empty) env_init expect in_loop raw_block =
   let block_env = ref be_init in
 
   let type_decl typing =
-    let fail msg = raise (Typing_Error (loc_decl typing, msg)) in
+    let fail = gfail (loc_decl typing) in
     let f2t s t1 t2 = fail (Format.sprintf s (typ_str t1) (typ_str t2)) in
     (* Empêche une redéfinition dans le même bloc *)
     let take name =
@@ -272,9 +273,8 @@ and type_block ?(be_init = Sset.empty) env_init expect in_loop raw_block =
 and type_fct env typing =
   let parse_sig (curoff, df_env) param =
     let ty, name, ploc = param in
-    if Smap.mem name df_env then begin
-      let msg = ("redefinition of parameter '" ^ name ^ "'") in
-      raise (Typing_Error(ploc, msg)) end;
+    if Smap.mem name df_env then
+      gfail ploc ("redefinition of parameter '" ^ name ^ "'");
     let vid = {
       offset = curoff;
       v_depth = -42
@@ -297,7 +297,6 @@ and type_fct env typing =
   }
 
 and type_prog (p_raw : prog) =
-  let fail loc msg = raise (Typing_Error(loc, msg)) in
   let malloc = {
     df_ret = Pointer Void;
     df_id = "malloc";
@@ -313,11 +312,11 @@ and type_prog (p_raw : prog) =
     df_loc = dummy_loc
   } in
   let user_main = try List.find (fun df -> df.df_id = "main") p_raw
-    with Not_found -> fail dummy_loc "missing main function" in
+    with Not_found -> gfail dummy_loc "missing main function" in
   if not (equiv Int user_main.df_ret) then
-    fail user_main.df_loc "function main must return int";
+    gfail user_main.df_loc "function main must return int";
   if user_main.df_args <> [] then
-    fail user_main.df_loc "function main must have no parameters";
+    gfail user_main.df_loc "function main must have no parameters";
   let b_raw = List.map (fun df -> Fct df) (malloc :: putchar :: p_raw) in
   let b_ty = type_block Smap.empty Void false b_raw in
   List.map (function | T_Fct df -> df | _ -> failwith "impossible") b_ty

@@ -1,12 +1,23 @@
 # PetitC
 
+- Rémy KIMBROUGH
+- Hugo PEYRAUD-MAGNIN
+
+## État du projet
+
+- Notre typeur est fonctionnel avec nested (172/172)
+- Les messages d'erreur de typage sont les plus précis possibles (localisation et nature du problème)
+- Nous avons aussi anticipé "au maximum" la production de code (le typeur s'occupe notamment de calculer les offset des variables), ce que vous pouvez constater avec les options `--print-ast` et `--debug-alloc`
+
+## Instructions
+
 Les modules OCaml nécessaires sont `menhir` et `ppx_deriving` (plus précisement le plugin `show`) pour auto-générer les pretty-printers avec `[@@deriving show {with_path = false}]`. Voir https://github.com/ocaml-ppx/ppx_deriving
 
 - Le Makefile appelle `dune build` et `dune clean`.
 - La règle `make autotest` lance le script `tests/autotest.sh` en mode 2b par défaut.
 - Pour choisir le mode, il suffit d'écraser la variable F, par exemple `make autotest F="1b"` pour tester l'analyse syntaxique
 
-`./petitc` est un lien symbolique vers l'exécutable `_build/default/petitc.exe`. Il possède deux options supplémentaires `--print-ast` et `--debug-alloc`.
+`./petitc` est un lien symbolique vers l'exécutable `_build/default/petitc.exe`.
 
 # Analyse syntaxique
 

@@ -26,6 +26,8 @@ decl_fct:
 |	s = decl_fct_sig; b = block { make_df s b }
 ```
 
+La règle `var` du parser qui lit type + identifiant, utilisée pour les paramètres et les variables, retient la localisation (`Ast.var = typ * string * loc`) afin d'avoir un message précis en cas de redéfinition de paramètre dans une signature (si `int f(int x, int x)`, le typeur renverra une erreur sur les caractères 14-19 et pas sur la signature entière).
+
 ## Directives `#include`
 On vérifie que les `#include` n'ont comme arguments que les trois fichiers, `stdbool.h`, `stdlib.h` et `stdio.h`, et on
 rejette n'importe quel autre `#include`. 
@@ -41,12 +43,41 @@ Initialement, nous avions un environnement pour les variables et un pour les fon
 avec un environnement sur un type somme quand nous nous sommes rendu compte qu'une variable pouvait cacher une fonction
 (ou vice-versa) et qu'on ne saurait pas déterminer qui masque qui autrement.
 
-Le typage des blocs demande de garder aussi l'ensemble des identifiants qui ont été utilisés au sein du bloc, pour ne pas
-réutiliser tout de suite un même nom.
-
 Les étiquettes sont des informations qui seront utiles lors de la production de code :
 - pour une fonction, un label de la forme `f_n_nom` où `n` est un identifiant numérique unique pour chaque fonction
 (variable `nbfuns` dans `typer.ml`), et `nom` est le nom initial de la fonction. On conserve aussi sa profondeur
 d'imbrication (utile uniquement pour le debug).
 
 - pour une variable, sa position dans le tableau d'appel de la fonction dans laquelle elle est déclarée, et la profondeur d'imbrication de cette fonction.
+
+## Le cas spécial type_block
+
+### Arguments persistents, variables mutables
+
+La fonction de typage des blocs est l'unique endroit du typeur à utiliser des références comme **variables locales**, initialisées par des arguments qui eux, par contre, sont persistents
+
+```OCaml
+and type_block ?(be_init = Sset.empty) env_init expect in_loop fpover fun_depth raw_block =
+  let env = ref env_init in
+  let block_env = ref be_init in
+  let fpcur = ref fpover and max_prefix_fp = ref 0 in
+  (* type_decl : decl -> t_decl *)
+  let block_ty = List.map type_decl raw_block in
+  block_ty, (max !fpcur !max_prefix_fp)
+```
+
+En effet, la persistence est utile uniquement quand on rentre dans un sous-bloc et il y a dans ce cas persistance au moment du passage des arguments : le sous-bloc "verra" de nouvelles références.
+
+Cela évite de devoir faire rentrer et ressortir les environnements dans `type_decl`. Ainsi `type_decl` est du type `decl -> t_decl` au lieu de `tenv -> Sset.t -> decl -> tenv * Sset.t * t_decl` et elle modifie les références du bloc courant. Cela a grandement allégé le code.
+
+### block_env
+
+En plus d'un environnement classique, on a `block_env` qui est l'ensemble (mutable) des identifiants qui ne peuvent pas être shadow : les variables du bloc courant. Les sous-blocs ne le modifient pas car ils "voient" une autre référence.
+
+Si le bloc est un corps de fonction la fonction `type_fct` passe un argument optionnel `be_init` contenant les noms des paramètres.
+
+### Ajout dans l'environnement
+
+Quand on déclare une variable, on l'ajoute à l'environnement **après** le typage de l'expression qui l'initialise (pour éviter `int x = x;`, même si c'est autorisé en C).
+
+Quand on déclare une fonction, on l'ajoute à l'environnement **avant** de la typer pour qu'elle puisse être récursive.

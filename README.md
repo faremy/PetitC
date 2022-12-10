@@ -37,7 +37,7 @@ Le typage des blocs demande de garder aussi l'ensemble des identifiants qui ont 
 réutiliser tout de suite un même nom.
 
 Les étiquettes sont des informations qui seront utiles lors de la production de code :
-	- pour une fonction, un label de la forme `f_n_nom` où `n` est un identifiant numérique unique pour chaque fonction
+- pour une fonction, un label de la forme `f_n_nom` où `n` est un identifiant numérique unique pour chaque fonction
 	(variable `nbfuns` dans `typer.ml`), et `nom` est le nom initial de la fonction.
 
-	- pour une variable, sa position dans le tableau d'appel de la fonction dans laquelle elle est déclarée, et la profondeur d'imbrication de cette fonction.
+- pour une variable, sa position dans le tableau d'appel de la fonction dans laquelle elle est déclarée, et la profondeur d'imbrication de cette fonction.

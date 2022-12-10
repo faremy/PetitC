@@ -289,7 +289,7 @@ and type_fct env typing =
       offset = curoff;
       v_depth = -42
     } in
-    curoff - (sizeof ty), Smap.add name (Varid (vid, ty)) df_env in
+    curoff + (sizeof ty), Smap.add name (Varid (vid, ty)) df_env in
 
   let _, df_env = List.fold_left parse_sig (begin_offset_arguments, Smap.empty) typing.df_args in
   (* Chaque binding de df_env est ajouté dans var_env *)

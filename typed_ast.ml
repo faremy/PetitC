@@ -46,4 +46,4 @@ let dummy_vid = { offset = 0; v_depth = 0 }
 let dummy_fid s = { name = s; f_depth = 0 }
 
 let sizeof : typ -> int = fun _ -> 8
-let begin_offset_arguments = -16 (* adr. retour -> &rbp parent -> *)
+let begin_offset_arguments = 24 (* adr. retour -> &rbp parent -> *)

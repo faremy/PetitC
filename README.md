@@ -26,6 +26,10 @@ decl_fct:
 |	s = decl_fct_sig; b = block { make_df s b }
 ```
 
+## Directives `#include`
+On vérifie que les `#include` n'ont comme arguments que les trois fichiers, `stdbool.h`, `stdlib.h` et `stdio.h`, et on
+rejette n'importe quel autre `#include`. 
+
 # Typage
 
 ## Environnements, réétiquetage

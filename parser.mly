@@ -1,9 +1,8 @@
 %{
 	open Ast
-	let check_include = List.iter (function
+	let check_include loc = function
 		| "stdlib.h" | "stdbool.h" | "stdio.h" -> ()
-		| _ -> failwith "unknown include file"
-	)
+		| f -> raise (Invalid_Include (Format.sprintf "unknown include file %s" f, loc))
 %}
 
 %token EOF
@@ -127,6 +126,6 @@ decl:
 |	s = stmt { Stmt s }
 
 incl:
-|	s = INCLUDE { s }
+|	s = INCLUDE { check_include $loc s }
 prog:
-|	i = list(incl); f = list(decl_fct); EOF { check_include i; f }
+|	list(incl); f = list(decl_fct); EOF { f }

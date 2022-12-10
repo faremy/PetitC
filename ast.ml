@@ -1,6 +1,11 @@
 open Lexing
 type loc = position * position
 
+
+(*Mise ici parce que ce fichier ne dépend de rien*)
+exception Invalid_Include of string * loc
+
+
 let pp_loc fmt (l : loc) =
   let (b, e) = l in
   let l = b.pos_lnum in

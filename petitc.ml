@@ -55,11 +55,15 @@ let () =
   with
   | Lexer.Lexing_Error s ->
     report (lexeme_start_p lb, lexeme_end_p lb);
-    eprintf "lexical error: %s@." s;
+    eprintf "Lexical error: %s@." s;
     exit 1
   | Parser.Error ->
     report (lexeme_start_p lb, lexeme_end_p lb);
-    eprintf "syntax error@.";
+    eprintf "Syntax error@.";
+    exit 1
+  | Ast.Invalid_Include (s, l) ->
+    report l;
+    eprintf "Invalid include: %s@." s;
     exit 1
   | Typer.Typing_Error (l, s) ->
     report l;

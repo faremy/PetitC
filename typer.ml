@@ -273,7 +273,7 @@ and type_block ?(be_init = Sset.empty) env_init expect in_loop fpover fun_depth 
         (* pour éviter int x = f(x); *)
         fpcur := !fpcur + (sizeof ty);
         let vid = {
-          offset = !fpcur;
+          offset = -(!fpcur);
           v_depth = fun_depth
         } in
         env := Smap.add name (Varid (vid, ty)) !env;

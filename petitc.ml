@@ -47,6 +47,7 @@ let () =
     if !parse_only then exit 0;
     let t_ast = Typer.type_prog arbre in
     List.iter (fun f -> Format.printf "%s at depth %d\n" f.t_df_id.name f.t_df_id.f_depth) !Typer.funs;
+    Format.eprintf "%a@." pp_t_prog t_ast;
     if !type_only then exit 0
   with
   | Lexer.Lexing_Error s ->

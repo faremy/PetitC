@@ -42,8 +42,10 @@ let make_te (desc, tau) =
   { t_edesc = desc; etyp = tau }
 
 let t_nothing = T_Block []
-let dummy_vid = { offset = 0; v_depth = 0 }
-let dummy_fid s = { name = s; f_depth = 0 }
+let make_vid d = { offset = 0; v_depth = d }
+let dummy_vid = make_vid 0
+let make_fid s d = { name = s; f_depth = d }
+let dummy_fid s = make_fid s 0
 
 let sizeof : typ -> int = fun _ -> 8
 let begin_offset_arguments = -16 (* adr. retour -> &rbp parent -> *)

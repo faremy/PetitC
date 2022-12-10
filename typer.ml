@@ -178,7 +178,7 @@ let rec type_expr (env : tenv) typing =
     T_Call (id, targs), proto_ret)
 
 
-let rec type_stmt (env : tenv) expect in_loop typing =
+let rec type_stmt (env : tenv) expect in_loop fun_depth typing =
   let fail = gfail typing.sloc in
   let f2t s t1 t2 = fail (Format.sprintf s (typ_str t1) (typ_str t2))
   and aux_expr = type_expr env
@@ -186,7 +186,7 @@ let rec type_stmt (env : tenv) expect in_loop typing =
 
   match typing.sdesc with
   | Expr e_raw -> T_Expr (aux_expr e_raw)
-  | Block b -> T_Block (type_block env expect in_loop b)
+  | Block b -> T_Block (type_block env expect in_loop fun_depth b)
 
   | Return None ->
       if expect <> Void then
@@ -201,8 +201,8 @@ let rec type_stmt (env : tenv) expect in_loop typing =
 
   | Cond (c_raw, s1_raw, s2_raw) ->
       let c_ty = aux_expr c_raw
-      and s1_ty = aux_stmt in_loop s1_raw
-      and s2_ty = aux_stmt in_loop s2_raw in
+      and s1_ty = aux_stmt in_loop fun_depth s1_raw
+      and s2_ty = aux_stmt in_loop fun_depth s2_raw in
 
       if equiv c_ty.etyp Void then
         gfail c_raw.eloc "void value not ignored as it ought to be";
@@ -220,13 +220,13 @@ let rec type_stmt (env : tenv) expect in_loop typing =
   | For (c_raw, es_raw, s_raw) ->
       let c_ty = aux_expr c_raw
       and es_ty = List.map aux_expr es_raw
-      and s_ty = aux_stmt true s_raw in
+      and s_ty = aux_stmt true fun_depth s_raw in
 
       if equiv c_ty.etyp Void then
         gfail c_raw.eloc "void value not ignored as it ought to be";
       T_For (c_ty, es_ty, s_ty)
 
-and type_block ?(be_init = Sset.empty) env_init expect in_loop raw_block =
+and type_block ?(be_init = Sset.empty) env_init expect in_loop fun_depth raw_block =
   (* On a besoin de persistence uniquement pour rentrer dans *)
   (* un sous-bloc : dans ce cas appel récursif à type_block *)
   (* et type_decl aura accès à de nouvelles références *)
@@ -245,7 +245,7 @@ and type_block ?(be_init = Sset.empty) env_init expect in_loop raw_block =
       else block_env := Sset.add name !block_env in
     
     match typing with
-    | Stmt s -> T_Stmt (type_stmt !env expect in_loop s)
+    | Stmt s -> T_Stmt (type_stmt !env expect in_loop fun_depth s)
     | Var dv ->
         let ty, name, _ = dv.dv_var in
         if equiv ty Void then
@@ -261,8 +261,8 @@ and type_block ?(be_init = Sset.empty) env_init expect in_loop raw_block =
           Some e_ty) in
         (* On ajoute dans l'env *après* le typage de l'init *)
         (* pour éviter int x = f(x); *)
-        env := Smap.add name (Varid (dummy_vid, ty)) !env;
-        T_Var { t_dv_typ = ty; t_dv_id = dummy_vid; t_dv_init = init_ty }
+        env := Smap.add name (Varid (make_vid fun_depth, ty)) !env;
+        T_Var { t_dv_typ = ty; t_dv_id = make_vid fun_depth; t_dv_init = init_ty }
 
     | Fct df ->
         let name = df.df_id in
@@ -270,17 +270,18 @@ and type_block ?(be_init = Sset.empty) env_init expect in_loop raw_block =
         (* Ajouter son prototype dans l'env *avant* de la typer *)
         (* permettra de gérer la récursion correctement *)
         (* Elle pourra être shadow par une de ses fonctions imbriquées *)
-        let new_id = Format.sprintf "f_%d_%s" !nbfun name in
-        env := Smap.add name (Funid (dummy_fid new_id, ftyp_of_decl df)) !env;
-
-        let typ_df = type_fct !env df in
         incr nbfun;
+        let new_id = Format.sprintf "f_%d_%s" !nbfun name in
+        env := Smap.add name (Funid (make_fid new_id (fun_depth + 1), ftyp_of_decl df)) !env;
+
+        let typ_df = type_fct !env (fun_depth + 1) df in
         funs := typ_df :: !funs;
         T_Fct typ_df
   in
   List.map type_decl raw_block
 
-and type_fct env typing =
+and type_fct env fun_depth typing =
+  let fun_id = make_fid (Format.sprintf "f_%d_%s" !nbfun typing.df_id) fun_depth in
   let parse_sig (curoff, df_env) param =
     let ty, name, ploc = param in
     if Smap.mem name df_env then
@@ -298,10 +299,10 @@ and type_fct env typing =
   (* Les paramètres ne peuvent être shadow dans le bloc principal du corps *)
   (* d'où block_env initialisé à param_names (bloque les noms des paramètres) *)
   let param_names = Smap.fold (fun k _ a -> Sset.add k a) df_env Sset.empty in
-  let block_ty = type_block new_env typing.df_ret false typing.df_body ~be_init:param_names in
+  let block_ty = type_block new_env typing.df_ret false fun_depth typing.df_body ~be_init:param_names in
   {
     t_df_ret = typing.df_ret;
-    t_df_id = dummy_fid (Format.sprintf "f_%d_%s" !nbfun typing.df_id);
+    t_df_id = fun_id;
     t_df_args = List.map typ_of_var typing.df_args;
     t_df_body = block_ty;
   }
@@ -328,5 +329,5 @@ and type_prog (p_raw : prog) =
   if user_main.df_args <> [] then
     gfail user_main.df_loc "function main must have no parameters";
   let b_raw = List.map (fun df -> Fct df) (malloc :: putchar :: p_raw) in
-  let b_ty = type_block Smap.empty Void false b_raw in
+  let b_ty = type_block Smap.empty Void false 0 b_raw in
   List.map (function | T_Fct df -> df | _ -> failwith "impossible") b_ty

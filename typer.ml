@@ -320,6 +320,7 @@ and type_fct env fun_depth typing =
     t_df_id = fun_id;
     t_df_args = List.map typ_of_var typing.df_args;
     t_df_body = block_ty;
+    t_df_offset = 0;
   }
 
 and type_prog (p_raw : prog) =

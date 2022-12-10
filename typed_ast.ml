@@ -8,6 +8,7 @@ and t_decl_fct = {
   t_df_id: fun_ident;
   t_df_args: typ list;
   t_df_body: t_decl list;
+  t_df_offset: int
 }
 and t_decl_var = {
   t_dv_typ: typ;

@@ -178,7 +178,7 @@ let rec type_expr (env : tenv) typing =
     T_Call (id, targs), proto_ret)
 
 
-let rec type_stmt (env : tenv) expect in_loop fun_depth typing =
+let rec type_stmt (env : tenv) expect in_loop (fpcur : int) fun_depth typing =
   let fail = gfail typing.sloc in
   let f2t s t1 t2 = fail (Format.sprintf s (typ_str t1) (typ_str t2))
   and aux_expr = type_expr env
@@ -201,8 +201,8 @@ let rec type_stmt (env : tenv) expect in_loop fun_depth typing =
 
   | Cond (c_raw, s1_raw, s2_raw) ->
       let c_ty = aux_expr c_raw
-      and s1_ty, fp1_todo_use_it = aux_stmt in_loop fun_depth s1_raw
-      and s2_ty, fp2_todo_use_it = aux_stmt in_loop fun_depth s2_raw in
+      and s1_ty, fp1_todo_use_it = aux_stmt in_loop (-42) fun_depth s1_raw
+      and s2_ty, fp2_todo_use_it = aux_stmt in_loop (-42) fun_depth s2_raw in
 
       if equiv c_ty.etyp Void then
         gfail c_raw.eloc "void value not ignored as it ought to be";
@@ -220,7 +220,7 @@ let rec type_stmt (env : tenv) expect in_loop fun_depth typing =
   | For (c_raw, es_raw, s_raw) ->
       let c_ty = aux_expr c_raw
       and es_ty = List.map aux_expr es_raw
-      and s_ty, fp_todo_use_it = aux_stmt true fun_depth s_raw in
+      and s_ty, fp_todo_use_it = aux_stmt true (-42) fun_depth s_raw in
 
       if equiv c_ty.etyp Void then
         gfail c_raw.eloc "void value not ignored as it ought to be";
@@ -252,7 +252,7 @@ and type_block ?(be_init = Sset.empty) env_init expect in_loop fun_depth raw_blo
     
     match typing with
     | Stmt s -> begin
-        let s_ty, sub_fp = type_stmt !env expect in_loop fun_depth s in
+        let s_ty, sub_fp = type_stmt !env expect in_loop (-42) fun_depth s in
         max_prefix_fp := max !max_prefix_fp sub_fp;
         T_Stmt (s_ty)
       end
@@ -303,7 +303,7 @@ and type_fct env fun_depth typing =
       gfail ploc ("redefinition of parameter '" ^ name ^ "'");
     let vid = {
       offset = curoff;
-      v_depth = -42
+      v_depth = fun_depth
     } in
     curoff + (sizeof ty), Smap.add name (Varid (vid, ty)) df_env in
 

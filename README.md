@@ -37,9 +37,6 @@ Initialement, nous avions un environnement pour les variables et un pour les fon
 avec un environnement sur un type somme quand nous nous sommes rendu compte qu'une variable pouvait cacher une fonction
 (ou vice-versa) et qu'on ne saurait pas déterminer qui masque qui autrement.
 
-Le typage des blocs demande de garder aussi l'ensemble des identifiants qui ont été utilisés au sein du bloc, pour ne pas
-réutiliser tout de suite un même nom.
-
 Les étiquettes sont des informations qui seront utiles lors de la production de code :
 - pour une fonction, un label de la forme `f_n_nom` où `n` est un identifiant numérique unique pour chaque fonction
 (variable `nbfuns` dans `typer.ml`), et `nom` est le nom initial de la fonction. On conserve aussi sa profondeur

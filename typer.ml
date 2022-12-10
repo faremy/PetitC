@@ -2,6 +2,7 @@ open Ast
 open Typed_ast
 
 exception Typing_Error of loc * string
+let debug_alloc = ref false
 let gfail loc msg = raise (Typing_Error(loc, msg))
 
 module Smap = Map.Make(String)
@@ -276,6 +277,8 @@ and type_block ?(be_init = Sset.empty) env_init expect in_loop fpover fun_depth 
           offset = -(!fpcur);
           v_depth = fun_depth
         } in
+        if !debug_alloc then
+          Format.eprintf "var %s at offset %d depth %d\n" name vid.offset vid.v_depth;
         env := Smap.add name (Varid (vid, ty)) !env;
         T_Var { t_dv_typ = ty; t_dv_id = vid; t_dv_init = init_ty }
 
@@ -293,7 +296,7 @@ and type_block ?(be_init = Sset.empty) env_init expect in_loop fpover fun_depth 
         funs := typ_df :: !funs;
         T_Fct typ_df
   in
-  List.map type_decl raw_block, !fpcur
+  List.map type_decl raw_block, (max !fpcur !max_prefix_fp)
 
 and type_fct env fun_depth typing =
   let fun_id = make_fid (Format.sprintf "f_%d_%s" !nbfun typing.df_id) fun_depth in
@@ -305,6 +308,8 @@ and type_fct env fun_depth typing =
       offset = curoff;
       v_depth = fun_depth
     } in
+    if !debug_alloc then
+      Format.eprintf "argument %s (of fct %s) at offset %d depth %d\n" name typing.df_id vid.offset vid.v_depth;
     curoff + (sizeof ty), Smap.add name (Varid (vid, ty)) df_env in
 
   let _, df_env = List.fold_left parse_sig (begin_offset_arguments, Smap.empty) typing.df_args in
@@ -315,6 +320,8 @@ and type_fct env fun_depth typing =
   (* d'où block_env initialisé à param_names (bloque les noms des paramètres) *)
   let param_names = Smap.fold (fun k _ a -> Sset.add k a) df_env Sset.empty in
   let block_ty, fp_body = type_block new_env typing.df_ret false 0 fun_depth typing.df_body ~be_init:param_names in
+  if !debug_alloc then
+    Format.eprintf "fct %s: frame_size = %d\n" typing.df_id fp_body;
   {
     t_df_ret = typing.df_ret;
     t_df_id = fun_id;

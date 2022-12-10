@@ -38,10 +38,7 @@ réutiliser tout de suite un même nom.
 
 Les étiquettes sont des informations qui seront utiles lors de la production de code :
 - pour une fonction, un label de la forme `f_n_nom` où `n` est un identifiant numérique unique pour chaque fonction
-	(variable `nbfuns` dans `typer.ml`), et `nom` est le nom initial de la fonction.
+(variable `nbfuns` dans `typer.ml`), et `nom` est le nom initial de la fonction. On conserve aussi sa profondeur
+d'imbrication (utile uniquement pour le debug).
 
 - pour une variable, sa position dans le tableau d'appel de la fonction dans laquelle elle est déclarée, et la profondeur d'imbrication de cette fonction.
-
-Le calcul des positions dans le tableau d'appel est fait de telle sorte à utiliser le moins d'espace possible (quand un
-bloc est terminé, on considère que l'espace qu'il utilisait est libéré et on recommence à attribuer les positions à partir
-de là).

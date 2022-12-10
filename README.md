@@ -4,7 +4,7 @@ Les modules OCaml nécessaires sont `menhir` et `ppx_deriving` (plus précisemen
 
 - Le Makefile appelle `dune build` et `dune clean`.
 - La règle `make autotest` lance le script `tests/autotest.sh` en mode 2b par défaut.
-- Pour choisir le mode, il suffit d'écraser la variable F, par exemple `make autotest F="2b"`
+- Pour choisir le mode, il suffit d'écraser la variable F, par exemple `make autotest F="1b"` pour tester l'analyse syntaxique
 
 `./petitc` est un lien symbolique vers l'exécutable `_build/default/petitc.exe`. Il possède deux options supplémentaires `--print-ast` et `--debug-alloc`.
 

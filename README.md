@@ -1,6 +1,12 @@
 # PetitC
 
-Instructions make
+Les modules OCaml nécessaires sont `menhir` et `ppx_deriving` (plus précisement le plugin `show`) pour auto-générer les pretty-printers avec `[@@deriving show {with_path = false}]`. Voir https://github.com/ocaml-ppx/ppx_deriving
+
+- Le Makefile appelle `dune build` et `dune clean`.
+- La règle `make autotest` lance le script `tests/autotest.sh` en mode 2b par défaut.
+- Pour choisir le mode, il suffit d'écraser la variable F, par exemple `make autotest F="2b"`
+
+`./petitc` est un lien symbolique vers l'exécutable `_build/default/petitc.exe`. Il possède deux options supplémentaires `--print-ast` et `--debug-alloc`.
 
 # Analyse syntaxique
 

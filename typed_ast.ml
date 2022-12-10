@@ -37,7 +37,7 @@ and t_stmt =
 | T_Continue
 
 and t_prog = t_decl_fct list
-[@@deriving show]
+[@@deriving show {with_path = false}]
 
 let make_te (desc, tau) =
   { t_edesc = desc; etyp = tau }

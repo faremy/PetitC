@@ -184,52 +184,49 @@ let rec type_stmt (env : tenv) expect in_loop (fpcur : int) fun_depth typing =
   and aux_expr = type_expr env
   and aux_stmt = type_stmt env expect in
 
-  let ret = begin match typing.sdesc with
-  | Expr e_raw -> T_Expr (aux_expr e_raw)
-  | Block b_raw -> begin
-    let b_ty, fp_todo_use_it = type_block env expect in_loop (-42) fun_depth b_raw in
-    T_Block (b_ty)
-  end
+  match typing.sdesc with
+  | Expr e_raw -> T_Expr (aux_expr e_raw), fpcur
+  | Block b_raw ->
+    let b_ty, fp_block = type_block env expect in_loop fpcur fun_depth b_raw in
+    T_Block (b_ty), fp_block
 
   | Return None ->
       if expect <> Void then
         fail "expected a return value";
-      T_Return None
+      T_Return None, fpcur
   | Return (Some e_raw) ->
       let e_ty = aux_expr e_raw in
       let tau = e_ty.etyp in
       if not (equiv expect tau) then
         f2t "return value doesn't have expected type %s (has type %s)" expect tau;
-      T_Return (Some e_ty)
+      T_Return (Some e_ty), fpcur
 
   | Cond (c_raw, s1_raw, s2_raw) ->
       let c_ty = aux_expr c_raw
-      and s1_ty, fp1_todo_use_it = aux_stmt in_loop (-42) fun_depth s1_raw
-      and s2_ty, fp2_todo_use_it = aux_stmt in_loop (-42) fun_depth s2_raw in
+      and s1_ty, fp1 = aux_stmt in_loop fpcur fun_depth s1_raw
+      and s2_ty, fp2 = aux_stmt in_loop fpcur fun_depth s2_raw in
 
       if equiv c_ty.etyp Void then
         gfail c_raw.eloc "void value not ignored as it ought to be";
-      T_Cond (c_ty, s1_ty, s2_ty)
+      T_Cond (c_ty, s1_ty, s2_ty), (max fp1 fp2)
 
   | Break ->
       if not in_loop then
         fail "break outside of loop";
-      T_Break
+      T_Break, fpcur
   | Continue ->
       if not in_loop then
         fail "continue outside of loop";
-      T_Continue
+      T_Continue, fpcur
 
   | For (c_raw, es_raw, s_raw) ->
       let c_ty = aux_expr c_raw
       and es_ty = List.map aux_expr es_raw
-      and s_ty, fp_todo_use_it = aux_stmt true (-42) fun_depth s_raw in
+      and s_ty, fp_body = aux_stmt true fpcur fun_depth s_raw in
 
       if equiv c_ty.etyp Void then
         gfail c_raw.eloc "void value not ignored as it ought to be";
-      T_For (c_ty, es_ty, s_ty)
-  end in
-  ret, 0 
+      T_For (c_ty, es_ty, s_ty), fp_body
 
 and type_block ?(be_init = Sset.empty) env_init expect in_loop fpover fun_depth raw_block =
   (* On a besoin de persistence uniquement pour rentrer dans *)

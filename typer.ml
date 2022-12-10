@@ -296,7 +296,8 @@ and type_block ?(be_init = Sset.empty) env_init expect in_loop fpover fun_depth 
         funs := typ_df :: !funs;
         T_Fct typ_df
   in
-  List.map type_decl raw_block, (max !fpcur !max_prefix_fp)
+  let block_ty = List.map type_decl raw_block in
+  block_ty, (max !fpcur !max_prefix_fp)
 
 and type_fct env fun_depth typing =
   let fun_id = make_fid (Format.sprintf "f_%d_%s" !nbfun typing.df_id) fun_depth in

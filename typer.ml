@@ -184,7 +184,7 @@ let rec type_stmt (env : tenv) expect in_loop typing =
   and aux_expr = type_expr env
   and aux_stmt = type_stmt env expect in
 
-  match typing.sdesc with
+  let ret = begin match typing.sdesc with
   | Expr e_raw -> T_Expr (aux_expr e_raw)
   | Block b -> T_Block (type_block env expect in_loop b)
 
@@ -201,8 +201,8 @@ let rec type_stmt (env : tenv) expect in_loop typing =
 
   | Cond (c_raw, s1_raw, s2_raw) ->
       let c_ty = aux_expr c_raw
-      and s1_ty = aux_stmt in_loop s1_raw
-      and s2_ty = aux_stmt in_loop s2_raw in
+      and s1_ty, fp1_todo_use_it = aux_stmt in_loop s1_raw
+      and s2_ty, fp2_todo_use_it = aux_stmt in_loop s2_raw in
 
       if equiv c_ty.etyp Void then
         gfail c_raw.eloc "void value not ignored as it ought to be";
@@ -220,11 +220,13 @@ let rec type_stmt (env : tenv) expect in_loop typing =
   | For (c_raw, es_raw, s_raw) ->
       let c_ty = aux_expr c_raw
       and es_ty = List.map aux_expr es_raw
-      and s_ty = aux_stmt true s_raw in
+      and s_ty, fp_todo_use_it = aux_stmt true s_raw in
 
       if equiv c_ty.etyp Void then
         gfail c_raw.eloc "void value not ignored as it ought to be";
       T_For (c_ty, es_ty, s_ty)
+  end in
+  ret, 0 
 
 and type_block ?(be_init = Sset.empty) env_init expect in_loop raw_block =
   (* On a besoin de persistence uniquement pour rentrer dans *)
@@ -234,6 +236,10 @@ and type_block ?(be_init = Sset.empty) env_init expect in_loop raw_block =
   (* Set des noms du bloc actuel, à ne pas shadow *)
   (* Quand type_fct appelle type_block, il bloque les params *)
   let block_env = ref be_init in
+  (* Comptage de variables *)
+  (* On retient 1. le nombre de variables d'ordre 1 *)
+  (* 2. le max des préfixes pour les sous-blocs *)
+  let fpcur = ref 0 and max_prefix_fp = ref 0 in
 
   let type_decl typing =
     let fail = gfail (loc_decl typing) in
@@ -245,7 +251,11 @@ and type_block ?(be_init = Sset.empty) env_init expect in_loop raw_block =
       else block_env := Sset.add name !block_env in
     
     match typing with
-    | Stmt s -> T_Stmt (type_stmt !env expect in_loop s)
+    | Stmt s -> begin
+        let s_ty, sub_fp = type_stmt !env expect in_loop s in
+        max_prefix_fp := max !max_prefix_fp sub_fp;
+        T_Stmt (s_ty)
+      end
     | Var dv ->
         let ty, name, _ = dv.dv_var in
         if equiv ty Void then
@@ -261,8 +271,13 @@ and type_block ?(be_init = Sset.empty) env_init expect in_loop raw_block =
           Some e_ty) in
         (* On ajoute dans l'env *après* le typage de l'init *)
         (* pour éviter int x = f(x); *)
-        env := Smap.add name (Varid (dummy_vid, ty)) !env;
-        T_Var { t_dv_typ = ty; t_dv_id = dummy_vid; t_dv_init = init_ty }
+        fpcur := !fpcur + (sizeof ty);
+        let vid = {
+          offset = !fpcur;
+          v_depth = -42
+        } in
+        env := Smap.add name (Varid (vid, ty)) !env;
+        T_Var { t_dv_typ = ty; t_dv_id = vid; t_dv_init = init_ty }
 
     | Fct df ->
         let name = df.df_id in

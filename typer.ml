@@ -186,7 +186,10 @@ let rec type_stmt (env : tenv) expect in_loop (fpcur : int) fun_depth typing =
 
   let ret = begin match typing.sdesc with
   | Expr e_raw -> T_Expr (aux_expr e_raw)
-  | Block b -> T_Block (type_block env expect in_loop fun_depth b)
+  | Block b_raw -> begin
+    let b_ty, fp_todo_use_it = type_block env expect in_loop (-42) fun_depth b_raw in
+    T_Block (b_ty)
+  end
 
   | Return None ->
       if expect <> Void then
@@ -228,7 +231,7 @@ let rec type_stmt (env : tenv) expect in_loop (fpcur : int) fun_depth typing =
   end in
   ret, 0 
 
-and type_block ?(be_init = Sset.empty) env_init expect in_loop fun_depth raw_block =
+and type_block ?(be_init = Sset.empty) env_init expect in_loop fpover fun_depth raw_block =
   (* On a besoin de persistence uniquement pour rentrer dans *)
   (* un sous-bloc : dans ce cas appel récursif à type_block *)
   (* et type_decl aura accès à de nouvelles références *)
@@ -239,7 +242,7 @@ and type_block ?(be_init = Sset.empty) env_init expect in_loop fun_depth raw_blo
   (* Comptage de variables *)
   (* On retient 1. le nombre de variables d'ordre 1 *)
   (* 2. le max des préfixes pour les sous-blocs *)
-  let fpcur = ref 0 and max_prefix_fp = ref 0 in
+  let fpcur = ref fpover and max_prefix_fp = ref 0 in
 
   let type_decl typing =
     let fail = gfail (loc_decl typing) in
@@ -293,7 +296,7 @@ and type_block ?(be_init = Sset.empty) env_init expect in_loop fun_depth raw_blo
         funs := typ_df :: !funs;
         T_Fct typ_df
   in
-  List.map type_decl raw_block
+  List.map type_decl raw_block, !fpcur
 
 and type_fct env fun_depth typing =
   let fun_id = make_fid (Format.sprintf "f_%d_%s" !nbfun typing.df_id) fun_depth in
@@ -314,7 +317,7 @@ and type_fct env fun_depth typing =
   (* Les paramètres ne peuvent être shadow dans le bloc principal du corps *)
   (* d'où block_env initialisé à param_names (bloque les noms des paramètres) *)
   let param_names = Smap.fold (fun k _ a -> Sset.add k a) df_env Sset.empty in
-  let block_ty = type_block new_env typing.df_ret false fun_depth typing.df_body ~be_init:param_names in
+  let block_ty, fp_body = type_block new_env typing.df_ret false (-42) fun_depth typing.df_body ~be_init:param_names in
   {
     t_df_ret = typing.df_ret;
     t_df_id = fun_id;
@@ -345,5 +348,5 @@ and type_prog (p_raw : prog) =
   if user_main.df_args <> [] then
     gfail user_main.df_loc "function main must have no parameters";
   let b_raw = List.map (fun df -> Fct df) (malloc :: putchar :: p_raw) in
-  let b_ty = type_block Smap.empty Void false 0 b_raw in
+  let b_ty, _ = type_block Smap.empty Void false 0 0 b_raw in
   List.map (function | T_Fct df -> df | _ -> failwith "impossible") b_ty

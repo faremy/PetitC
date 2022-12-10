@@ -26,6 +26,8 @@ decl_fct:
 |	s = decl_fct_sig; b = block { make_df s b }
 ```
 
+La règle `var` du parser qui lit type + identifiant, utilisée pour les paramètres et les variables, retient la localisation (`Ast.var = typ * string * loc`) afin d'avoir un message précis en cas de redéfinition de paramètre dans une signature (si `int f(int x, int x)`, le typeur renverra une erreur sur les caractères 14-19 et pas sur la signature entière).
+
 # Typage
 
 ## Environnements, réétiquetage

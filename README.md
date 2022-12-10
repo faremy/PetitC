@@ -46,3 +46,29 @@ Les étiquettes sont des informations qui seront utiles lors de la production de
 d'imbrication (utile uniquement pour le debug).
 
 - pour une variable, sa position dans le tableau d'appel de la fonction dans laquelle elle est déclarée, et la profondeur d'imbrication de cette fonction.
+
+## Le cas spécial type_block
+
+### Arguments persistents, variables mutables
+
+La fonction de typage des blocs est l'unique endroit du typeur à utiliser des références comme **variables locales**, initialisées par des arguments qui eux, par contre, sont persistents
+
+```OCaml
+and type_block ?(be_init = Sset.empty) env_init expect in_loop fpover fun_depth raw_block =
+  let env = ref env_init in
+  let block_env = ref be_init in
+  let fpcur = ref fpover and max_prefix_fp = ref 0 in
+  (* type_decl : decl -> t_decl *)
+  let block_ty = List.map type_decl raw_block in
+  block_ty, (max !fpcur !max_prefix_fp)
+```
+
+En effet, la persistence est utile uniquement quand on rentre dans un sous-bloc et il y a dans ce cas persistance au moment du passage des arguments : le sous-bloc "verra" de nouvelles références.
+
+Cela évite de devoir faire rentrer et ressortir les environnements dans `type_decl`. Ainsi `type_decl` est du type `decl -> t_decl` au lieu de `tenv -> Sset.t -> decl -> tenv * Sset.t * t_decl` et elle modifie les références du bloc courant. Cela a grandement allégé le code.
+
+### block_env
+
+En plus d'un environnement classique, on a `block_env` qui est l'ensemble (mutable) des identifiants qui ne peuvent pas être shadow : les variables du bloc courant. Les sous-blocs ne le modifient pas car ils "voient" une autre référence.
+
+Si le bloc est un corps de fonction la fonction `type_fct` passe un argument optionnel `be_init` contenant les noms des paramètres.

@@ -352,6 +352,9 @@ and type_prog (p_raw : prog) =
     gfail user_main.df_loc "function main must return int";
   if user_main.df_args <> [] then
     gfail user_main.df_loc "function main must have no parameters";
+
+  (* On emballe les decl_fct en decl (pour avoir un bloc) *)
   let b_raw = List.map (fun df -> Fct df) (malloc :: putchar :: p_raw) in
   let b_ty, _ = type_block Smap.empty Void false 0 0 b_raw in
+  (* On déballe les decl typées *)
   List.map (function | T_Fct df -> df | _ -> failwith "impossible") b_ty

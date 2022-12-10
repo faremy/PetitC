@@ -252,7 +252,7 @@ and type_block ?(be_init = Sset.empty) env_init expect in_loop fpover fun_depth 
     
     match typing with
     | Stmt s -> begin
-        let s_ty, sub_fp = type_stmt !env expect in_loop (-42) fun_depth s in
+        let s_ty, sub_fp = type_stmt !env expect in_loop !fpcur fun_depth s in
         max_prefix_fp := max !max_prefix_fp sub_fp;
         T_Stmt (s_ty)
       end
@@ -314,7 +314,7 @@ and type_fct env fun_depth typing =
   (* Les paramètres ne peuvent être shadow dans le bloc principal du corps *)
   (* d'où block_env initialisé à param_names (bloque les noms des paramètres) *)
   let param_names = Smap.fold (fun k _ a -> Sset.add k a) df_env Sset.empty in
-  let block_ty, fp_body = type_block new_env typing.df_ret false (-42) fun_depth typing.df_body ~be_init:param_names in
+  let block_ty, fp_body = type_block new_env typing.df_ret false 0 fun_depth typing.df_body ~be_init:param_names in
   {
     t_df_ret = typing.df_ret;
     t_df_id = fun_id;

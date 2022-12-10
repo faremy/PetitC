@@ -48,4 +48,4 @@ let make_fid s d = { name = s; f_depth = d }
 let dummy_fid s = make_fid s 0
 
 let sizeof : typ -> int = fun _ -> 8
-let begin_offset_arguments = -16 (* adr. retour -> &rbp parent -> *)
+let begin_offset_arguments = 24 (* adr. retour -> &rbp parent -> *)

@@ -48,7 +48,7 @@ Les étiquettes sont des informations qui seront utiles lors de la production de
 (variable `nbfuns` dans `typer.ml`), et `nom` est le nom initial de la fonction. On conserve aussi sa profondeur
 d'imbrication (utile uniquement pour le debug).
 
-- pour une variable, sa position dans le tableau d'appel de la fonction dans laquelle elle est déclarée, et la profondeur d'imbrication de cette fonction.
+- pour une variable, sa position dans le tableau d'appel de la fonction dans laquelle elle est déclarée, et la profondeur d'imbrication de cette fonction. Le nom de la variable est oublié car il ne nous sera plus utile par la suite.
 
 ## Le cas spécial type_block
 

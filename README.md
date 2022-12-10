@@ -7,7 +7,7 @@
 
 - Notre typeur est fonctionnel avec nested (172/172)
 - Les messages d'erreur de typage sont les plus précis possibles (localisation et nature du problème)
-- Nous avons aussi anticipé "au maximum" la production de code (le typeur s'occupe notamment de calculer les offset des variables), ce que vous pouvez constater avec les options `--print-ast` et `--debug-alloc`
+- Nous avons aussi anticipé "au maximum" la production de code (le typeur s'occupe notamment de calculer les offset des variables), ce que vous pouvez constater avec l'option `--debug-alloc`
 
 ## Instructions
 
@@ -18,6 +18,8 @@ Les modules OCaml nécessaires sont `menhir` et `ppx_deriving` (plus précisemen
 - Pour choisir le mode, il suffit d'écraser la variable F, par exemple `make autotest F="1b"` pour tester l'analyse syntaxique
 
 `./petitc` est un lien symbolique vers l'exécutable `_build/default/petitc.exe`.
+
+En plus de `--debug-alloc`, deux autres options ont été rajoutées, `--print-ast` et `--print-typed-ast`.
 
 # Analyse syntaxique
 

@@ -16,9 +16,9 @@ let funs = ref []
 
 
 let lvalue e = match e.edesc with
-| Ident _ -> true
-| Unop (Deref, _) -> true
-| _ -> false
+  | Ident _ -> true
+  | Unop (Deref, _) -> true
+  | _ -> false
 
 let equiv u v = match u, v with
   | t1, t2 when t1 = t2 -> true (* réflexive *)
@@ -179,7 +179,7 @@ let rec type_expr (env : tenv) typing =
     T_Call (id, targs), proto_ret)
 
 
-let rec type_stmt (env : tenv) expect in_loop (fpcur : int) fun_depth typing =
+let rec type_stmt (env : tenv) expect in_loop fpcur fun_depth typing =
   let fail = gfail typing.sloc in
   let f2t s t1 t2 = fail (Format.sprintf s (typ_str t1) (typ_str t2))
   and aux_expr = type_expr env

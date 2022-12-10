@@ -33,6 +33,10 @@ Chaque fonction de typage prend en paramètre un environnement, qui associe à c
 représente (fonction ou variable), son type et son étiquette. Les environnements sont persistants ce qui permet de masquer
 d'anciennes associations quand on redéclare, et de revenir à ce qui était avant lorsque l'association cesse d'exister.
 
+Initialement, nous avions un environnement pour les variables et un pour les fonctions, mais nous avons regroupé les deux
+avec un environnement sur un type somme quand nous nous sommes rendu compte qu'une variable pouvait cacher une fonction
+(ou vice-versa) et qu'on ne saurait pas déterminer qui masque qui autrement.
+
 Le typage des blocs demande de garder aussi l'ensemble des identifiants qui ont été utilisés au sein du bloc, pour ne pas
 réutiliser tout de suite un même nom.
 

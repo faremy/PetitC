@@ -5,9 +5,9 @@
 
 ## État du projet
 
-- Notre typeur est fonctionnel avec nested (172/172)
-- Les messages d'erreur de typage sont les plus précis possibles (localisation et nature du problème)
-- Nous avons aussi anticipé "au maximum" la production de code (le typeur s'occupe notamment de calculer les offset des variables), ce que vous pouvez constater avec l'option `--debug-alloc`
+- Notre typeur est fonctionnel avec nested (172/172).
+- Les messages d'erreur de typage sont les plus précis possibles (localisation et nature du problème).
+- Nous avons aussi anticipé "au maximum" la production de code (le typeur s'occupe notamment de calculer les offset des variables), ce que vous pouvez constater avec l'option `--debug-alloc`.
 
 ## Instructions
 
@@ -15,7 +15,7 @@ Les modules OCaml nécessaires sont `menhir` et `ppx_deriving` (plus précisemen
 
 - Le Makefile appelle `dune build` et `dune clean`.
 - La règle `make autotest` lance le script `tests/autotest.sh` en mode 2b par défaut.
-- Pour choisir le mode, il suffit d'écraser la variable F, par exemple `make autotest F="1b"` pour tester l'analyse syntaxique
+- Pour choisir le mode, il suffit d'écraser la variable F, par exemple `make autotest F="1b"` pour tester l'analyse syntaxique.
 
 `./petitc` est un lien symbolique vers l'exécutable `_build/default/petitc.exe`.
 
@@ -23,20 +23,22 @@ En plus de `--debug-alloc`, deux autres options ont été rajoutées, `--print-a
 
 # Analyse syntaxique
 
-On transforme `if (cond) s` (sans else) en `if (cond) s else {}` (branche else qui ne fait rien)
+## If
+
+On transforme `if (cond) s` (sans else) en `if (cond) s else {}` (branche else qui ne fait rien).
 
 ## While et For
-On transforme les `while(e) s` en `for(;e;)`, on n'a donc pas de While dans l'AST
+On transforme les `while(e) s` en `for(;e;)`, on n'a donc pas de While dans l'AST.
 
 On a également décidé d'appliquer la transformation (proposée par le sujet) de `for(d;e;l)` vers `{d;for(;e;l)}`.
 
-Dans la grammaire, `e` match une `<expr>?` mais le remplacement de `e = None` par `e = Const True` est faite par le parser pour éviter l'option dans l'AST
+Dans la grammaire, `e` match une `<expr>?` mais le remplacement de `e = None` par `e = Const True` est faite par le parser pour éviter l'option dans l'AST.
 
-L'AST ne contient que des `For of expr * (expr list) * stmt`
+L'AST ne contient que des `For of expr * (expr list) * stmt`.
 
 ## Déclaration de fonction
 
-Pour avoir de meilleurs messages d'erreurs, le champ `df_loc` de l'AST retient la localisation de la **signature** de la fonction, en caputant `$loc` dans une sous-règle inlinée
+Pour avoir de meilleurs messages d'erreurs, le champ `df_loc` de l'AST retient la localisation de la **signature** de la fonction, en caputant `$loc` dans une sous-règle inlinée.
 
 ```OCaml
 %inline decl_fct_sig:
@@ -49,7 +51,7 @@ La règle `var` du parser qui lit type + identifiant, utilisée pour les paramè
 
 ## Directives `#include`
 On vérifie que les `#include` n'ont comme arguments que les trois fichiers, `stdbool.h`, `stdlib.h` et `stdio.h`, et on
-rejette n'importe quel autre `#include`. 
+rejette n'importe quel autre `#include`.
 
 # Typage
 
@@ -63,11 +65,16 @@ avec un environnement sur un type somme quand nous nous sommes rendu compte qu'u
 (ou vice-versa) et qu'on ne saurait pas déterminer qui masque qui autrement.
 
 Les étiquettes sont des informations qui seront utiles lors de la production de code :
-- pour une fonction, un label de la forme `f_n_nom` où `n` est un identifiant numérique unique pour chaque fonction
-(variable `nbfuns` dans `typer.ml`), et `nom` est le nom initial de la fonction. On conserve aussi sa profondeur
-d'imbrication (utile uniquement pour le debug).
+- pour une fonction, un label de la forme `f_n_nom` où `n` est un identifiant numérique unique pour chaque fonction attribué
+dans l'ordre d'apparition dans le programme (variable `nbfuns` dans `typer.ml`), et `nom` est le nom initial de la fonction.
+On conserve aussi sa profondeur d'imbrication (utile uniquement pour le debug).
 
 - pour une variable, sa position dans le tableau d'appel de la fonction dans laquelle elle est déclarée, et la profondeur d'imbrication de cette fonction. Le nom de la variable est oublié car il ne nous sera plus utile par la suite.
+
+## Programme typé
+La fonction `type_prog` renvoie l'AST typé, utile pour le debug. Elle génère aussi une liste `funs`, qui contient toutes
+les déclarations de fonctions du programme (y compris celles imbriquées), triées par ordre d'apparition : c'est celle là
+qui nous intéressera lors de la production de code.
 
 ## Le cas spécial type_block
 

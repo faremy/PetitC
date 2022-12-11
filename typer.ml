@@ -356,5 +356,14 @@ and type_prog (p_raw : prog) =
   (* On emballe les decl_fct en decl (pour avoir un bloc) *)
   let b_raw = List.map (fun df -> Fct df) (malloc :: putchar :: p_raw) in
   let b_ty, _ = type_block Smap.empty Void false 0 0 b_raw in
+
+  (* Tri de la liste funs selon l'ordre d'apparition dans le code *)
+  let cmp_labels f1 f2 =
+    let get_num f = match String.split_on_char '_' f.t_df_id.name with
+    | _ :: num :: _ -> int_of_string num
+    | _ -> failwith "bad label"
+    in (get_num f1) - (get_num f2)
+  in funs := List.sort cmp_labels !funs;
+
   (* On déballe les decl typées *)
   List.map (function | T_Fct df -> df | _ -> failwith "impossible") b_ty

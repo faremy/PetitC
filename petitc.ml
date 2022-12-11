@@ -42,7 +42,6 @@ let () =
   let lb = Lexing.from_channel c in
   
   try
-    (* dumb_parser () *)
     let ast = Parser.prog Lexer.token lb in
     if !print_ast then
       Format.eprintf "%a@." Ast.pp_prog ast;

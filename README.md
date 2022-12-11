@@ -78,9 +78,9 @@ qui nous intéressera lors de la production de code.
 
 ## Le cas spécial type_block
 
-### Arguments persistents, variables mutables
+### Arguments persistants, variables mutables
 
-La fonction de typage des blocs est l'unique endroit du typeur à utiliser des références comme **variables locales**, initialisées par des arguments qui eux, par contre, sont persistents
+La fonction de typage des blocs est l'unique endroit du typeur à utiliser des références comme **variables locales**, initialisées par des arguments qui eux, par contre, sont persistants
 
 ```OCaml
 and type_block ?(be_init = Sset.empty) env_init expect in_loop fpover fun_depth raw_block =
@@ -92,13 +92,13 @@ and type_block ?(be_init = Sset.empty) env_init expect in_loop fpover fun_depth 
   block_ty, (max !fpcur !max_prefix_fp)
 ```
 
-En effet, la persistence est utile uniquement quand on rentre dans un sous-bloc et il y a dans ce cas persistance au moment du passage des arguments : le sous-bloc "verra" de nouvelles références.
+En effet, la persistance est utile uniquement quand on rentre dans un sous-bloc et il y a dans ce cas persistance au moment du passage des arguments : le sous-bloc "verra" de nouvelles références.
 
 Cela évite de devoir faire rentrer et ressortir les environnements dans `type_decl`. Ainsi `type_decl` est du type `decl -> t_decl` au lieu de `tenv -> Sset.t -> decl -> tenv * Sset.t * t_decl` et elle modifie les références du bloc courant. Cela a grandement allégé le code.
 
 ### block_env
 
-En plus d'un environnement classique, on a `block_env` qui est l'ensemble (mutable) des identifiants qui ne peuvent pas être shadow : les variables du bloc courant. Les sous-blocs ne le modifient pas car ils "voient" une autre référence.
+En plus d'un environnement classique, on a `block_env` qui est l'ensemble (mutable) des identifiants qui ne peuvent pas être réutilisés : les variables du bloc courant. Les sous-blocs ne le modifient pas car ils "voient" une autre référence.
 
 Si le bloc est un corps de fonction la fonction `type_fct` passe un argument optionnel `be_init` contenant les noms des paramètres.
 

@@ -5,7 +5,7 @@ open X86_64
 
 let rec compile_lvalue expr =
   match expr.t_edesc with
-  | T_Ident { offset = o; v_depth = _ } -> nop, ind ~ofs:o rsp
+  | T_Ident { offset = o; v_depth = _ } -> nop, ind ~ofs:o rbp
   | T_Unop (Deref, e) -> compile_expr e, ind rax
   | _ -> failwith "impossible"
 and compile_expr expr =
@@ -13,7 +13,7 @@ and compile_expr expr =
   | T_Const (IntCst i) -> movq (imm i) !%rax
   | T_Const (BoolCst b) -> movq (imm (if b then 1 else 0)) !%rax
   | T_Const Null -> movq (imm 0) !%rax
-  | T_Ident { offset = o; v_depth = _ } -> movq (ind ~ofs:o rsp) !%rax
+  | T_Ident { offset = o; v_depth = _ } -> movq (ind ~ofs:o rbp) !%rax
   | T_Call (id, args) ->
     List.fold_left (fun code e -> compile_expr e ++ pushq !%rax ++ code) nop args
     ++ call id.name
@@ -43,7 +43,7 @@ let compile_var dv =
     | None -> nop
     | Some e -> compile_expr e) ++
   
-  movq !%rax (ind ~ofs:dv.t_dv_id.offset rsp)
+  movq !%rax (ind ~ofs:dv.t_dv_id.offset rbp)
   
 
 let compile_stmt = function
@@ -54,9 +54,9 @@ let compile_decl = function
 | T_Var dv -> compile_var dv
 | T_Stmt s -> compile_stmt s
 let real_fct f =
-  let ret = ref (addq (imm f.t_df_frame_size) !%rsp) in
-  List.iter (fun d -> ret := !ret ++ compile_decl d) f.t_df_body;
-  !ret
+  let code = ref (pushq !%rbp ++ movq !%rsp !%rbp ++ subq (imm f.t_df_frame_size) !%rsp) in
+  List.iter (fun d -> code := !code ++ compile_decl d) f.t_df_body;
+  !code ++ leave ++ ret
    
 let stack_aligner ext_fct_name =
   pushq !%rbp ++

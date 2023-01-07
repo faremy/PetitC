@@ -15,9 +15,24 @@ let rec compile_expr expr =
     ++ popn (List.length args)
   | _ -> failwith "aaa"
 
+let stack_aligner ext_fct_name =
+  pushq !%rbp ++
+  movq !%rsp !%rbp ++
+  andq (imm (-16)) !%rsp ++
+  call ext_fct_name ++
+  movq !%rbp !%rsp ++
+  popq rbp ++
+  ret
+
+let putchar_wrapper = nop
+let compile_fct f = match f.t_df_id.name with
+  | "f_1_malloc" -> stack_aligner "malloc"
+  | "f_2_putchar" -> stack_aligner "putchar"
+  | _ -> ret
+
 let compile_prog prog funs =
   let tx = ref (globl "main") in
-  List.iter (fun f -> tx := !tx ++ label f.t_df_id.name ++ ret) funs;
+  List.iter (fun f -> tx := !tx ++ label f.t_df_id.name ++ compile_fct f) funs;
   let p =
     { text = !tx;
       data = nop

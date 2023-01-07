@@ -16,8 +16,9 @@ and compile_expr expr =
   | T_Ident { offset = o; v_depth = _ } -> movq (ind ~ofs:o rbp) !%rax
   | T_Call (id, args) ->
     List.fold_left (fun code e -> compile_expr e ++ pushq !%rax ++ code) nop args
+    ++ pushq (imm 0) (* TODO : rbp du parent *)
     ++ call id.name
-    ++ popn (8 * List.length args)
+    ++ popn (8 * (1 + List.length args))
 
   | T_Unop (UPlus, e) -> compile_expr e
   | T_Unop (UMinus, e) -> compile_expr e ++ negq !%rax
@@ -59,9 +60,9 @@ let real_fct f =
   !code ++ leave ++ ret
    
 let stack_aligner ext_fct_name =
-  movq (ind ~ofs:8 rsp) !%rdi ++
   pushq !%rbp ++
   movq !%rsp !%rbp ++
+  movq (ind ~ofs:24 rsp) !%rdi ++
   andq (imm (-16)) !%rsp ++
   call ext_fct_name ++
   movq !%rbp !%rsp ++

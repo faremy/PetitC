@@ -14,3 +14,13 @@ let rec compile_expr expr =
     ++ call id.name
     ++ popn (List.length args)
   | _ -> failwith "aaa"
+
+let compile_prog prog funs =
+  let p =
+    { text =
+        globl "main" ++ label "main" ++
+        ret;
+      data = nop
+    }
+  in
+  p

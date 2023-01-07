@@ -50,7 +50,14 @@ let () =
     let t_ast = Typer.type_prog ast in
     if !print_typ_ast then
       Format.eprintf "%a@." pp_t_prog t_ast;
-    if !type_only then exit 0
+    if !type_only then exit 0;
+    let prog = Compile.compile_prog t_ast Typer.funs in
+    let file_s = (Filename.chop_suffix file ".c") ^ ".s" in
+    let f = open_out file_s in
+    let fmt = formatter_of_out_channel f in
+    X86_64.print_program fmt prog;
+    fprintf fmt "@?";
+    close_out f
   with
   | Lexer.Lexing_Error s ->
     report (lexeme_start_p lb, lexeme_end_p lb);

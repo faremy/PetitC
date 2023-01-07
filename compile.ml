@@ -13,7 +13,9 @@ and compile_expr expr =
   | T_Const (IntCst i) -> movq (imm i) !%rax
   | T_Const (BoolCst b) -> movq (imm (if b then 1 else 0)) !%rax
   | T_Const Null -> movq (imm 0) !%rax
-  | T_Ident { offset = o; v_depth = _ } -> movq (ind ~ofs:o rbp) !%rax
+  | T_Ident _ ->
+    let code, addr = compile_lvalue expr in
+    code ++ movq addr !%rax
   | T_Call (id, args) ->
     List.fold_left (fun code e -> compile_expr e ++ pushq !%rax ++ code) nop args
     ++ pushq (imm 0) (* TODO : rbp du parent *)
@@ -52,7 +54,7 @@ let compile_stmt = function
   | T_Expr e -> compile_expr e
   | _ -> failwith "stmt pas gere"
 let compile_decl = function
-| T_Fct _ -> failwith "fonction imbriquee"
+| T_Fct _ -> nop
 | T_Var dv -> compile_var dv
 | T_Stmt s -> compile_stmt s
 let real_fct f =

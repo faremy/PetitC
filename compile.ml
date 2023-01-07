@@ -22,6 +22,7 @@ and compile_expr expr =
 
   | T_Unop (UPlus, e) -> compile_expr e
   | T_Unop (UMinus, e) -> compile_expr e ++ negq !%rax
+  | T_Unop (Deref, e) -> compile_expr e ++ movq (ind rax) !%rax
 
   | T_Binop (Plus as op, e1, e2)
   | T_Binop (Minus as op, e1, e2)
@@ -30,8 +31,8 @@ and compile_expr expr =
     (match op with Plus -> addq | Minus -> subq | Mul -> imulq | _ -> failwith "impossible") !%rbx !%rax
   | T_Binop (Div as op, e1, e2)
   | T_Binop (Mod as op, e1, e2) ->
-    compile_expr e2 ++ movq !%rax !%rbx ++ compile_expr e1 ++ idivq !%rbx ++
-    (match op with Mod -> movq !%rdx !%rax | _ -> failwith "impossible")
+    compile_expr e2 ++ movq !%rax !%rbx ++ compile_expr e1 ++ movq (imm 0) !%rdx ++ idivq !%rbx ++
+    (match op with Div -> nop | Mod -> movq !%rdx !%rax | _ -> failwith "impossible")
 
   | T_Assign (e1, e2) ->
     let c1, addr = compile_lvalue e1 in

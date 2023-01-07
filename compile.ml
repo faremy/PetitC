@@ -16,10 +16,10 @@ let rec compile_expr expr =
   | _ -> failwith "aaa"
 
 let compile_prog prog funs =
+  let tx = ref (globl "main") in
+  List.iter (fun f -> tx := !tx ++ label f.t_df_id.name ++ ret) funs;
   let p =
-    { text =
-        globl "main" ++ label "main" ++
-        ret;
+    { text = !tx;
       data = nop
     }
   in

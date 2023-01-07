@@ -15,9 +15,9 @@ and compile_expr expr =
   | T_Const Null -> movq (imm 0) !%rax
   | T_Ident { offset = o; v_depth = _ } -> movq (ind ~ofs:o rsp) !%rax
   | T_Call (id, args) ->
-    List.fold_left (fun code e -> (compile_expr e) ++ pushq !%rax ++ code) nop args
+    List.fold_left (fun code e -> compile_expr e ++ pushq !%rax ++ code) nop args
     ++ call id.name
-    ++ popn (List.length args)
+    ++ popn (8 * List.length args)
 
   | T_Unop (UPlus, e) -> compile_expr e
   | T_Unop (UMinus, e) -> compile_expr e ++ negq !%rax

@@ -9,3 +9,13 @@ let rec compile_expr expr =
   | T_Const (BoolCst b) -> movq (imm (if b then 1 else 0)) !%rax
   | T_Const Null -> movq (imm 0) !%rax
   | _ -> failwith "aaa"
+
+let compile_prog prog funs =
+  let p =
+    { text =
+        globl "main" ++ label "main" ++
+        ret;
+      data = nop
+    }
+  in
+  p

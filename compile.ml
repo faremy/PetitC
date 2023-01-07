@@ -15,7 +15,7 @@ and compile_expr expr =
   | T_Const Null -> movq (imm 0) !%rax
   | T_Ident { offset = o; v_depth = _ } -> movq (ind ~ofs:o rsp) !%rax
   | T_Call (id, args) ->
-    List.fold_left (fun code e -> (compile_expr e) ++ code) nop args
+    List.fold_left (fun code e -> (compile_expr e) ++ pushq !%rax ++ code) nop args
     ++ call id.name
     ++ popn (List.length args)
 
@@ -38,6 +38,26 @@ and compile_expr expr =
   | T_Sizeof _ -> movq (imm 8) !%rax
   | _ -> failwith "aaa"
 
+let compile_var dv =
+  (match dv.t_dv_init with
+    | None -> nop
+    | Some e -> compile_expr e) ++
+  
+  movq !%rax (ind ~ofs:dv.t_dv_id.offset rsp)
+  
+
+let compile_stmt = function
+  | T_Expr e -> compile_expr e
+  | _ -> failwith "stmt pas gere"
+let compile_decl = function
+| T_Fct _ -> failwith "fonction imbriquee"
+| T_Var dv -> compile_var dv
+| T_Stmt s -> compile_stmt s
+let real_fct f =
+  let ret = ref (addq (imm f.t_df_frame_size) !%rsp) in
+  List.iter (fun d -> ret := !ret ++ compile_decl d) f.t_df_body;
+  !ret
+   
 let stack_aligner ext_fct_name =
   pushq !%rbp ++
   movq !%rsp !%rbp ++
@@ -51,11 +71,11 @@ let putchar_wrapper = nop
 let compile_fct f = match f.t_df_id.name with
   | "f_1_malloc" -> stack_aligner "malloc"
   | "f_2_putchar" -> stack_aligner "putchar"
-  | _ -> ret
+  | _ -> real_fct f
 
 let compile_prog prog funs main_id =
-  let tx = ref (globl main_id) in
-  List.iter (fun f -> tx := !tx ++ label f.t_df_id.name ++ compile_fct f) funs;
+  let tx = ref (globl "main") in
+  List.iter (fun f -> tx := !tx ++ label (match f.t_df_id.name with | s when s = main_id -> "main" | s -> s) ++ compile_fct f) funs;
   let p =
     { text = !tx;
       data = nop

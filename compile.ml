@@ -59,6 +59,7 @@ let real_fct f =
   !code ++ leave ++ ret
    
 let stack_aligner ext_fct_name =
+  movq (ind ~ofs:8 rsp) !%rdi ++
   pushq !%rbp ++
   movq !%rsp !%rbp ++
   andq (imm (-16)) !%rsp ++

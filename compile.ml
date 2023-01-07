@@ -62,7 +62,7 @@ let real_fct f =
 let stack_aligner ext_fct_name =
   pushq !%rbp ++
   movq !%rsp !%rbp ++
-  movq (ind ~ofs:24 rsp) !%rdi ++
+  movq (ind ~ofs:begin_offset_arguments rsp) !%rdi ++
   andq (imm (-16)) !%rsp ++
   call ext_fct_name ++
   movq !%rbp !%rsp ++

@@ -51,7 +51,7 @@ let () =
     if !print_typ_ast then
       Format.eprintf "%a@." pp_t_prog t_ast;
     if !type_only then exit 0;
-    let prog = Compile.compile_prog t_ast !Typer.funs in
+    let prog = Compile.compile_prog t_ast !Typer.funs !Typer.main_id in
     let file_s = (Filename.chop_suffix file ".c") ^ ".s" in
     let f = open_out file_s in
     let fmt = formatter_of_out_channel f in

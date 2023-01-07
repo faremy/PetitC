@@ -13,6 +13,7 @@ type tenv = envid Smap.t
 
 let nbfun = ref 0
 let funs = ref []
+let main_id = ref ""
 
 
 let lvalue e = match e.edesc with
@@ -323,6 +324,8 @@ and type_fct env fun_depth typing =
   let block_ty, fp_body = type_block new_env typing.df_ret false 0 fun_depth typing.df_body ~be_init:param_names in
   if !debug_alloc then
     Format.eprintf "fct %s (label %s, depth %d): frame_size = %d\n" typing.df_id fun_id.name fun_id.f_depth fp_body;
+  if (fun_depth = 1 && typing.df_id = "main") then
+    main_id := fun_id.name;
   {
     t_df_ret = typing.df_ret;
     t_df_id = fun_id;

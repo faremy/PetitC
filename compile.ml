@@ -30,8 +30,8 @@ let compile_fct f = match f.t_df_id.name with
   | "f_2_putchar" -> stack_aligner "putchar"
   | _ -> ret
 
-let compile_prog prog funs =
-  let tx = ref (globl "main") in
+let compile_prog prog funs main_id =
+  let tx = ref (globl main_id) in
   List.iter (fun f -> tx := !tx ++ label f.t_df_id.name ++ compile_fct f) funs;
   let p =
     { text = !tx;

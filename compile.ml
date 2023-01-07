@@ -27,16 +27,16 @@ and compile_expr expr =
   | T_Binop (Plus as op, e1, e2)
   | T_Binop (Minus as op, e1, e2)
   | T_Binop (Mul as op, e1, e2) -> 
-    compile_expr e2 ++ movq !%rax !%rbx ++ compile_expr e1 ++
+    compile_expr e2 ++ pushq !%rax ++ compile_expr e1 ++ popq rbx ++
     (match op with Plus -> addq | Minus -> subq | Mul -> imulq | _ -> failwith "impossible") !%rbx !%rax
   | T_Binop (Div as op, e1, e2)
   | T_Binop (Mod as op, e1, e2) ->
-    compile_expr e2 ++ movq !%rax !%rbx ++ compile_expr e1 ++ movq (imm 0) !%rdx ++ idivq !%rbx ++
+    compile_expr e2 ++ pushq !%rax ++ compile_expr e1 ++ popq rbx ++ movq (imm 0) !%rdx ++ idivq !%rbx ++
     (match op with Div -> nop | Mod -> movq !%rdx !%rax | _ -> failwith "impossible")
 
   | T_Assign (e1, e2) ->
     let c1, addr = compile_lvalue e1 in
-    compile_expr e2 ++ c1 ++ movq !%rax addr
+    compile_expr e2 ++ pushq !%rax ++ c1 ++ popq rbx ++ movq !%rbx addr
   | T_Sizeof _ -> movq (imm 8) !%rax
   | _ -> failwith "aaa"
 

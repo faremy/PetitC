@@ -77,7 +77,8 @@ let compile_fct f = match f.t_df_id.name with
 
 let compile_prog prog funs main_id =
   let tx = ref (globl "main") in
-  List.iter (fun f -> tx := !tx ++ label (match f.t_df_id.name with | s when s = main_id -> "main" | s -> s) ++ compile_fct f) funs;
+  List.iter (fun f -> tx := !tx ++ label f.t_df_id.name ++ compile_fct f) funs;
+  tx := !tx ++ label "main" ++ call main_id ++ ret;
   let p =
     { text = !tx;
       data = nop

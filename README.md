@@ -107,3 +107,8 @@ Si le bloc est un corps de fonction la fonction `type_fct` passe un argument opt
 Quand on déclare une variable, on l'ajoute à l'environnement **après** le typage de l'expression qui l'initialise (pour éviter `int x = x;`, même si c'est autorisé en C).
 
 Quand on déclare une fonction, on l'ajoute à l'environnement **avant** de la typer pour qu'elle puisse être récursive.
+
+# Production de code
+
+## Registres utilisés
+Pour limiter le nombre d'ajouts sur la pile, le résultat d'une expression se trouve dans `%rax`.

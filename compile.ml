@@ -4,6 +4,7 @@ open X86_64
 
 
 let fail () = failwith "impossible"
+let new_control = let nb = ref 0 in fun () -> incr nb; !nb
 
 let rec compile_lvalue expr =
   (* Pour une lvalue, renvoie l'adresse dans laquelle est stockée la valeur, au lieu de la valeur elle même *)
@@ -38,6 +39,11 @@ and compile_expr expr =
     ++ movq !%rax !%rbx
     ++ movq (ind rbx) !%rax
     ++ (match op with Incr _ -> incq | Decr _ -> decq | _ -> fail ()) (ind rbx)
+  | T_Unop (Not, e) ->
+    compile_expr e
+    ++ testq !%rax !%rax
+    ++ sete !%al
+    ++ movzbq !%al rax
 
   | T_Binop (Plus as op, e1, e2)
   | T_Binop (Minus as op, e1, e2)

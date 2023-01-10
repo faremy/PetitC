@@ -14,7 +14,7 @@ and compile_expr expr =
   | T_Const (IntCst i) -> movq (imm i) !%rax
   | T_Const (BoolCst b) -> movq (imm (if b then 1 else 0)) !%rax
   | T_Const Null -> movq (imm 0) !%rax
-  | T_Ident _ -> let code = compile_lvalue expr in code ++ movq (ind rax) !%rax
+  | T_Ident _ -> compile_lvalue expr ++ movq (ind rax) !%rax
   | T_Call (id, args) ->
     List.fold_left (fun code e -> compile_expr e ++ pushq !%rax ++ code) nop args
     ++ pushq (imm 0) (* TODO : rbp du parent *)
@@ -24,7 +24,16 @@ and compile_expr expr =
   | T_Unop (UPlus, e) -> compile_expr e
   | T_Unop (UMinus, e) -> compile_expr e ++ negq !%rax
   | T_Unop (Deref, e) -> compile_expr e ++ movq (ind rax) !%rax
-  | T_Unop (Amp, e) -> let code = compile_lvalue e in code
+  | T_Unop (Amp, e) -> compile_lvalue e
+  | T_Unop (Incr true as op, e) | T_Unop (Decr true as op, e) ->
+    compile_lvalue e
+    ++ (match op with Incr _ -> incq | Decr _ -> decq | _ -> failwith "impossible") (ind rax)
+    ++ movq (ind rax) !%rax
+  | T_Unop (Incr false as op, e) | T_Unop (Decr false as op, e) ->
+    compile_lvalue e
+    ++ movq !%rax !%rbx
+    ++ movq (ind rbx) !%rax
+    ++ (match op with Incr _ -> incq | Decr _ -> decq | _ -> failwith "impossible") (ind rbx)
 
   | T_Binop (Plus as op, e1, e2)
   | T_Binop (Minus as op, e1, e2)
@@ -45,10 +54,9 @@ and compile_expr expr =
     ++ (match op with Div -> nop | Mod -> movq !%rdx !%rax | _ -> failwith "impossible")
 
   | T_Assign (e1, e2) ->
-    let c1 = compile_lvalue e1 in
     compile_expr e2
     ++ pushq !%rax (* On sauvegarde le calcul du 2e terme *)
-    ++ c1
+    ++ compile_lvalue e1
     ++ popq rbx
     ++ movq !%rbx (ind rax)
     ++ movq !%rbx !%rax (* a = b renvoie la valeur de a après assignation, c'est à dire la valeur de b *)

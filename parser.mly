@@ -74,10 +74,10 @@ expr_desc:
 
 |	PLUS; e = expr { Unop (UPlus, e) } %prec PPLUS
 |	MINUS; e = expr { Unop (UMinus, e) } %prec MMINUS
-|	PPLUS; e = expr { Unop (Incr false, e) }
-|	MMINUS e = expr { Unop (Decr false, e) }
-|	e = expr; PPLUS { Unop (Incr true, e) }
-|	e = expr; MMINUS { Unop (Decr true, e) }
+|	PPLUS; e = expr { Unop (Incr true, e) }
+|	MMINUS e = expr { Unop (Decr true, e) }
+|	e = expr; PPLUS { Unop (Incr false, e) }
+|	e = expr; MMINUS { Unop (Decr false, e) }
 
 |	AMP; e = expr { Unop (Amp, e) }
 |	NOT; e = expr { Unop (Not, e) }

@@ -5,6 +5,14 @@ open X86_64
 
 let fail () = failwith "impossible"
 let new_control = let nb = ref 0 in fun () -> incr nb; !nb
+let undef = "undef"
+
+let rewind_rbp =
+  let rec aux code = function
+    | 0 -> code
+    | n when n > 0 -> aux (code ++ movq (ind ~ofs:offset_rbp_parent rax) !%rax) (n - 1)
+    | _ -> fail ()
+  in aux (movq !%rbp !%rax)
 
 let rec compile_lvalue expr =
   (* Pour une lvalue, renvoie l'adresse dans laquelle est stockée la valeur, au lieu de la valeur elle même *)
@@ -87,10 +95,12 @@ and compile_expr expr =
   | T_Sizeof _ -> movq (imm 8) !%rax
   | _ -> fail ()
 
-let rec compile_stmt = function
+let rec compile_stmt brk ctn = function
   | T_Expr e -> compile_expr e
-  | T_Block b -> compile_block b
+  | T_Block b -> compile_block brk ctn b
   | T_Return e -> (match e with None -> nop | Some v -> compile_expr v) ++ leave ++ ret
+  | T_Break -> jmp brk
+  | T_Continue -> jmp ctn
   | _ -> fail ()
 
 and compile_var dv =
@@ -99,18 +109,18 @@ and compile_var dv =
     | Some e -> compile_expr e)
   ++ movq !%rax (ind ~ofs:dv.t_dv_id.offset rbp)
 
-and compile_block b =
+and compile_block brk ctn b =
   let compile_decl = function
     | T_Fct _ -> nop
     | T_Var dv -> compile_var dv
-    | T_Stmt s -> compile_stmt s
+    | T_Stmt s -> compile_stmt brk ctn s
   in List.fold_left (fun code d -> code ++ compile_decl d) nop b
 
 let real_fct f =
   pushq !%rbp
   ++ movq !%rsp !%rbp
   ++ subq (imm f.t_df_frame_size) !%rsp
-  ++ compile_block f.t_df_body
+  ++ compile_block undef undef f.t_df_body
   ++ leave
   ++ ret
    

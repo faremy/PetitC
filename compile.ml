@@ -5,7 +5,7 @@ open X86_64
 
 let rec compile_lvalue expr =
   match expr.t_edesc with
-  | T_Ident { offset = o; v_depth = _ } -> nop, ind ~ofs:o rbp
+  | T_Ident { offset = o; v_depth = _ } -> movq !%rbp !%rax, ind ~ofs:o rax
   | T_Unop (Deref, e) -> compile_expr e, ind rax
   | _ -> failwith "impossible"
 and compile_expr expr =
@@ -13,9 +13,7 @@ and compile_expr expr =
   | T_Const (IntCst i) -> movq (imm i) !%rax
   | T_Const (BoolCst b) -> movq (imm (if b then 1 else 0)) !%rax
   | T_Const Null -> movq (imm 0) !%rax
-  | T_Ident _ ->
-    let code, addr = compile_lvalue expr in
-    code ++ movq addr !%rax
+  | T_Ident _ -> let code, addr = compile_lvalue expr in code ++ movq addr !%rax
   | T_Call (id, args) ->
     List.fold_left (fun code e -> compile_expr e ++ pushq !%rax ++ code) nop args
     ++ pushq (imm 0) (* TODO : rbp du parent *)
@@ -25,20 +23,34 @@ and compile_expr expr =
   | T_Unop (UPlus, e) -> compile_expr e
   | T_Unop (UMinus, e) -> compile_expr e ++ negq !%rax
   | T_Unop (Deref, e) -> compile_expr e ++ movq (ind rax) !%rax
+  | T_Unop (Amp, e) -> let code, _ = compile_lvalue e in code
 
   | T_Binop (Plus as op, e1, e2)
   | T_Binop (Minus as op, e1, e2)
   | T_Binop (Mul as op, e1, e2) -> 
-    compile_expr e2 ++ pushq !%rax ++ compile_expr e1 ++ popq rbx ++
-    (match op with Plus -> addq | Minus -> subq | Mul -> imulq | _ -> failwith "impossible") !%rbx !%rax
+    compile_expr e2
+    ++ pushq !%rax (* On sauvegarde le calcul du 2e terme *)
+    ++ compile_expr e1
+    ++ popq rbx
+    ++ (match op with Plus -> addq | Minus -> subq | Mul -> imulq | _ -> failwith "impossible") !%rbx !%rax
   | T_Binop (Div as op, e1, e2)
   | T_Binop (Mod as op, e1, e2) ->
-    compile_expr e2 ++ pushq !%rax ++ compile_expr e1 ++ popq rbx ++ movq (imm 0) !%rdx ++ idivq !%rbx ++
-    (match op with Div -> nop | Mod -> movq !%rdx !%rax | _ -> failwith "impossible")
+    compile_expr e2
+    ++ pushq !%rax (* On sauvegarde le calcul du 2e terme *)
+    ++ compile_expr e1
+    ++ popq rbx
+    ++ movq (imm 0) !%rdx (* Il faut mettre à 0 les 64 derniers bits du dividende *)
+    ++ idivq !%rbx
+    ++ (match op with Div -> nop | Mod -> movq !%rdx !%rax | _ -> failwith "impossible")
 
   | T_Assign (e1, e2) ->
     let c1, addr = compile_lvalue e1 in
-    compile_expr e2 ++ pushq !%rax ++ c1 ++ popq rbx ++ movq !%rbx addr
+    compile_expr e2
+    ++ pushq !%rax (* On sauvegarde le calcul du 2e terme *)
+    ++ c1
+    ++ popq rbx
+    ++ movq !%rbx addr
+    ++ movq !%rbx !%rax (* a = b renvoie la valeur de a après assignation, c'est à dire la valeur de b *)
   | T_Sizeof _ -> movq (imm 8) !%rax
   | _ -> failwith "aaa"
 

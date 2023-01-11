@@ -14,51 +14,52 @@ let rewind_rbp =
     | _ -> fail ()
   in aux (movq !%rbp !%rax)
 
-let rec compile_lvalue expr =
+let rec compile_lvalue cur_depth expr =
   (* Pour une lvalue, renvoie l'adresse dans laquelle est stockée la valeur, au lieu de la valeur elle même *)
   match expr.t_edesc with
-  | T_Ident { offset = o; v_depth = _ } -> movq !%rbp !%rax ++ addq (imm o) !%rax
-  | T_Unop (Deref, e) -> compile_expr e
+  | T_Ident { offset = o; v_depth = d } -> rewind_rbp (cur_depth - d) ++ addq (imm o) !%rax
+  | T_Unop (Deref, e) -> compile_expr cur_depth e
   | _ -> fail ()
-and compile_expr expr =
+and compile_expr cur_depth expr =
   match expr.t_edesc with
   | T_Const (IntCst i) -> movq (imm i) !%rax
   | T_Const (BoolCst b) -> movq (imm (if b then 1 else 0)) !%rax
   | T_Const Null -> movq (imm 0) !%rax
-  | T_Ident _ -> compile_lvalue expr ++ movq (ind rax) !%rax
+  | T_Ident _ -> compile_lvalue cur_depth expr ++ movq (ind rax) !%rax
   | T_Call (id, args) ->
-    List.fold_left (fun code e -> compile_expr e ++ pushq !%rax ++ code) nop args
-    ++ pushq (imm 0) (* TODO : rbp du parent *)
+    List.fold_left (fun code e -> compile_expr cur_depth e ++ pushq !%rax ++ code) nop args
+    ++ rewind_rbp (cur_depth + 1 - id.f_depth)
+    ++ pushq !%rax
     ++ call id.name
     ++ popn (8 * (1 + List.length args))
 
-  | T_Unop (UPlus, e) -> compile_expr e
-  | T_Unop (UMinus, e) -> compile_expr e ++ negq !%rax
-  | T_Unop (Deref, e) -> compile_expr e ++ movq (ind rax) !%rax
-  | T_Unop (Amp, e) -> compile_lvalue e
+  | T_Unop (UPlus, e) -> compile_expr cur_depth e
+  | T_Unop (UMinus, e) -> compile_expr cur_depth e ++ negq !%rax
+  | T_Unop (Deref, e) -> compile_expr cur_depth e ++ movq (ind rax) !%rax
+  | T_Unop (Amp, e) -> compile_lvalue cur_depth e
   | T_Unop (Incr true as op, e)
   | T_Unop (Decr true as op, e) ->
     let offset = (match Typer.bool_eradictor expr.etyp with Pointer Void | Int -> 1 | _ -> 8) in
-    compile_lvalue e
+    compile_lvalue cur_depth e
     ++ (match op with Incr _ -> addq | Decr _ -> subq | _ -> fail ()) (imm offset) (ind rax)
     ++ movq (ind rax) !%rax
   | T_Unop (Incr false as op, e)
   | T_Unop (Decr false as op, e) ->
     let offset = (match Typer.bool_eradictor expr.etyp with Pointer Void | Int -> 1 | _ -> 8) in
-    compile_lvalue e
+    compile_lvalue cur_depth e
     ++ movq !%rax !%rbx
     ++ movq (ind rbx) !%rax
     ++ (match op with Incr _ -> addq | Decr _ -> subq | _ -> fail ()) (imm offset) (ind rbx)
   | T_Unop (Not, e) ->
-    compile_expr e
+    compile_expr cur_depth e
     ++ testq !%rax !%rax
     ++ sete !%al
     ++ movzbq !%al rax
 
   | T_Binop (Plus, e1, e2) ->
-    compile_expr e2
+    compile_expr cur_depth e2
     ++ pushq !%rax (* On sauvegarde le calcul du 2e terme *)
-    ++ compile_expr e1
+    ++ compile_expr cur_depth e1
     ++ popq rbx
     ++ (match Typer.be2 e1 e2 with
     | Int, Int | Pointer Void, Int | Int, Pointer Void -> addq !%rbx !%rax
@@ -67,9 +68,9 @@ and compile_expr expr =
     | _ -> fail ())
 
   | T_Binop (Minus, e1, e2) ->
-    compile_expr e2
+    compile_expr cur_depth e2
     ++ pushq !%rax (* On sauvegarde le calcul du 2e terme *)
-    ++ compile_expr e1
+    ++ compile_expr cur_depth e1
     ++ popq rbx
     ++ (match Typer.be2 e1 e2 with
     | Pointer Void, Pointer Void | Int, Int | Pointer Void, Int -> subq !%rbx !%rax
@@ -78,17 +79,17 @@ and compile_expr expr =
     | _ -> fail ())
 
   | T_Binop (Mul, e1, e2) -> 
-    compile_expr e2
+    compile_expr cur_depth e2
     ++ pushq !%rax (* On sauvegarde le calcul du 2e terme *)
-    ++ compile_expr e1
+    ++ compile_expr cur_depth e1
     ++ popq rbx
     ++ imulq !%rbx !%rax
 
   | T_Binop (Div as op, e1, e2)
   | T_Binop (Mod as op, e1, e2) ->
-    compile_expr e2
+    compile_expr cur_depth e2
     ++ pushq !%rax (* On sauvegarde le calcul du 2e terme *)
-    ++ compile_expr e1
+    ++ compile_expr cur_depth e1
     ++ popq rbx
     ++ cqto
     ++ idivq !%rbx
@@ -100,9 +101,9 @@ and compile_expr expr =
   | T_Binop (Le as op, e1, e2)
   | T_Binop (Gt as op, e1, e2)
   | T_Binop (Ge as op, e1, e2) ->
-    compile_expr e2
+    compile_expr cur_depth e2
     ++ pushq !%rax
-    ++ compile_expr e1
+    ++ compile_expr cur_depth e1
     ++ popq rbx
     ++ cmpq !%rbx !%rax
     ++ (match op with Eq -> sete | Neq -> setne | Lt -> setl | Le -> setle | Gt -> setg | Ge -> setge | _ -> fail ()) !%al
@@ -115,28 +116,28 @@ and compile_expr expr =
       | And -> (Format.sprintf "and_skip_%d" id), je
       | Or -> (Format.sprintf "or_skip_%d" id), jne
       | _ -> fail() in
-    compile_expr e1
+    compile_expr cur_depth e1
     ++ testq !%rax !%rax
     ++ jumper skip_andor
-    ++ compile_expr e2
+    ++ compile_expr cur_depth e2
     ++ label skip_andor
     ++ testq !%rax !%rax
     ++ setne !%al
     ++ movzbq !%al rax
 
   | T_Assign (e1, e2) ->
-    compile_expr e2
+    compile_expr cur_depth e2
     ++ pushq !%rax (* On sauvegarde le calcul du 2e terme *)
-    ++ compile_lvalue e1
+    ++ compile_lvalue cur_depth e1
     ++ popq rbx
     ++ movq !%rbx (ind rax)
     ++ movq !%rbx !%rax (* a = b renvoie la valeur de a après assignation, c'est à dire la valeur de b *)
   | T_Sizeof _ -> movq (imm 8) !%rax
   | _ -> fail ()
 
-let rec compile_stmt brk ctn = function
-  | T_Expr e -> compile_expr e
-  | T_Block b -> compile_block brk ctn b
+let rec compile_stmt cur_depth brk ctn = function
+  | T_Expr e -> compile_expr cur_depth e
+  | T_Block b -> compile_block cur_depth brk ctn b
 
   | T_For (cond, step, body) ->
     let id = new_control () in
@@ -148,11 +149,11 @@ let rec compile_stmt brk ctn = function
 
     jmp lab_cond
     ++ label lab_body
-    ++ compile_stmt lab_break lab_continue body
+    ++ compile_stmt cur_depth lab_break lab_continue body
     ++ label lab_continue
-    ++ List.fold_left (fun code e -> code ++ compile_expr e) nop step
+    ++ List.fold_left (fun code e -> code ++ compile_expr cur_depth e) nop step
     ++ label lab_cond
-    ++ compile_expr cond
+    ++ compile_expr cur_depth cond
     ++ testq !%rax !%rax
     ++ jne lab_body
     ++ label lab_break
@@ -163,35 +164,35 @@ let rec compile_stmt brk ctn = function
     and skip_else = Format.sprintf "else_skip_%d" id
     in
 
-    compile_expr cond
+    compile_expr cur_depth cond
     ++ testq !%rax !%rax
     ++ je skip_if
-    ++ compile_stmt brk ctn body_if
+    ++ compile_stmt cur_depth brk ctn body_if
     ++ jmp skip_else
     ++ label skip_if
-    ++ compile_stmt brk ctn body_else
+    ++ compile_stmt cur_depth brk ctn body_else
     ++ label skip_else
 
-  | T_Return e -> (match e with None -> nop | Some v -> compile_expr v) ++ leave ++ ret
+  | T_Return e -> (match e with None -> nop | Some v -> compile_expr cur_depth v) ++ leave ++ ret
   | T_Break -> jmp brk
   | T_Continue -> jmp ctn
 
-and compile_var dv = match dv.t_dv_init with
+and compile_var cur_depth dv = match dv.t_dv_init with
   | None -> nop
-  | Some e -> compile_expr e ++ movq !%rax (ind ~ofs:dv.t_dv_id.offset rbp)
+  | Some e -> compile_expr cur_depth e ++ movq !%rax (ind ~ofs:dv.t_dv_id.offset rbp)
 
-and compile_block brk ctn b =
+and compile_block cur_depth brk ctn b =
   let compile_decl = function
     | T_Fct _ -> nop
-    | T_Var dv -> compile_var dv
-    | T_Stmt s -> compile_stmt brk ctn s
+    | T_Var dv -> compile_var cur_depth dv
+    | T_Stmt s -> compile_stmt cur_depth brk ctn s
   in List.fold_left (fun code d -> code ++ compile_decl d) nop b
 
 let real_fct f =
   pushq !%rbp
   ++ movq !%rsp !%rbp
   ++ subq (imm f.t_df_frame_size) !%rsp
-  ++ compile_block undef undef f.t_df_body
+  ++ compile_block f.t_df_id.f_depth undef undef f.t_df_body
   ++ leave
   ++ ret
    

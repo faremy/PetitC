@@ -90,7 +90,7 @@ and compile_expr expr =
     ++ pushq !%rax (* On sauvegarde le calcul du 2e terme *)
     ++ compile_expr e1
     ++ popq rbx
-    ++ movq (imm 0) !%rdx (* Il faut mettre à 0 les 64 derniers bits du dividende *)
+    ++ cqto
     ++ idivq !%rbx
     ++ (match op with Div -> nop | Mod -> movq !%rdx !%rax | _ -> fail ())
   
@@ -176,11 +176,9 @@ let rec compile_stmt brk ctn = function
   | T_Break -> jmp brk
   | T_Continue -> jmp ctn
 
-and compile_var dv =
-  (match dv.t_dv_init with
-    | None -> nop
-    | Some e -> compile_expr e)
-  ++ movq !%rax (ind ~ofs:dv.t_dv_id.offset rbp)
+and compile_var dv = match dv.t_dv_init with
+  | None -> nop
+  | Some e -> compile_expr e ++ movq !%rax (ind ~ofs:dv.t_dv_id.offset rbp)
 
 and compile_block brk ctn b =
   let compile_decl = function

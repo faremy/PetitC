@@ -38,29 +38,52 @@ and compile_expr expr =
   | T_Unop (Amp, e) -> compile_lvalue e
   | T_Unop (Incr true as op, e)
   | T_Unop (Decr true as op, e) ->
+    let offset = (match Typer.bool_eradictor expr.etyp with Pointer Void | Int -> 1 | _ -> 8) in
     compile_lvalue e
-    ++ (match op with Incr _ -> incq | Decr _ -> decq | _ -> fail ()) (ind rax)
+    ++ (match op with Incr _ -> addq | Decr _ -> subq | _ -> fail ()) (imm offset) (ind rax)
     ++ movq (ind rax) !%rax
   | T_Unop (Incr false as op, e)
   | T_Unop (Decr false as op, e) ->
+    let offset = (match Typer.bool_eradictor expr.etyp with Pointer Void | Int -> 1 | _ -> 8) in
     compile_lvalue e
     ++ movq !%rax !%rbx
     ++ movq (ind rbx) !%rax
-    ++ (match op with Incr _ -> incq | Decr _ -> decq | _ -> fail ()) (ind rbx)
+    ++ (match op with Incr _ -> addq | Decr _ -> subq | _ -> fail ()) (imm offset) (ind rbx)
   | T_Unop (Not, e) ->
     compile_expr e
     ++ testq !%rax !%rax
     ++ sete !%al
     ++ movzbq !%al rax
 
-  | T_Binop (Plus as op, e1, e2)
-  | T_Binop (Minus as op, e1, e2)
-  | T_Binop (Mul as op, e1, e2) -> 
+  | T_Binop (Plus, e1, e2) ->
     compile_expr e2
     ++ pushq !%rax (* On sauvegarde le calcul du 2e terme *)
     ++ compile_expr e1
     ++ popq rbx
-    ++ (match op with Plus -> addq | Minus -> subq | Mul -> imulq | _ -> fail ()) !%rbx !%rax
+    ++ (match Typer.be2 e1 e2 with
+    | Int, Int | Pointer Void, Int | Int, Pointer Void -> addq !%rbx !%rax
+    | Pointer _, Int -> shlq (imm 3) !%rbx ++ addq !%rbx !%rax
+    | Int, Pointer _ -> shlq (imm 3) !%rax ++ addq !%rbx !%rax
+    | _ -> fail ())
+
+  | T_Binop (Minus, e1, e2) ->
+    compile_expr e2
+    ++ pushq !%rax (* On sauvegarde le calcul du 2e terme *)
+    ++ compile_expr e1
+    ++ popq rbx
+    ++ (match Typer.be2 e1 e2 with
+    | Pointer Void, Pointer Void | Int, Int | Pointer Void, Int -> subq !%rbx !%rax
+    | Pointer _, Int -> shlq (imm 3) !%rbx ++ subq !%rbx !%rax
+    | Pointer _, Pointer _ -> subq !%rbx !%rax ++ sarq (imm 3) !%rax
+    | _ -> fail ())
+
+  | T_Binop (Mul, e1, e2) -> 
+    compile_expr e2
+    ++ pushq !%rax (* On sauvegarde le calcul du 2e terme *)
+    ++ compile_expr e1
+    ++ popq rbx
+    ++ imulq !%rbx !%rax
+
   | T_Binop (Div as op, e1, e2)
   | T_Binop (Mod as op, e1, e2) ->
     compile_expr e2
@@ -118,7 +141,20 @@ let rec compile_stmt brk ctn = function
     ++ jne lab_body
     ++ label lab_break
   
-  | T_Cond (cond, body_if, body_else) -> fail ()
+  | T_Cond (cond, body_if, body_else) ->
+    let id = new_control () in
+    let skip_if = Format.sprintf "if_skip_%d" id
+    and skip_else = Format.sprintf "else_skip_%d" id
+    in
+
+    compile_expr cond
+    ++ testq !%rax !%rax
+    ++ je skip_if
+    ++ compile_stmt brk ctn body_if
+    ++ jmp skip_else
+    ++ label skip_if
+    ++ compile_stmt brk ctn body_else
+    ++ label skip_else
 
   | T_Return e -> (match e with None -> nop | Some v -> compile_expr v) ++ leave ++ ret
   | T_Break -> jmp brk

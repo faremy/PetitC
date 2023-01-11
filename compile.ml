@@ -98,10 +98,31 @@ and compile_expr expr =
 let rec compile_stmt brk ctn = function
   | T_Expr e -> compile_expr e
   | T_Block b -> compile_block brk ctn b
+
+  | T_For (cond, step, body) ->
+    let id = new_control () in
+    let lab_body = Format.sprintf "loop_%d" id
+    and lab_continue = Format.sprintf "loop_%d_continue" id
+    and lab_cond = Format.sprintf "loop_%d_condition" id
+    and lab_break = Format.sprintf "loop_%d_break" id
+    in
+
+    jmp lab_cond
+    ++ label lab_body
+    ++ compile_stmt lab_break lab_continue body
+    ++ label lab_continue
+    ++ List.fold_left (fun code e -> code ++ compile_expr e) nop step
+    ++ label lab_cond
+    ++ compile_expr cond
+    ++ testq !%rax !%rax
+    ++ jne lab_body
+    ++ label lab_break
+  
+  | T_Cond (cond, body_if, body_else) -> fail ()
+
   | T_Return e -> (match e with None -> nop | Some v -> compile_expr v) ++ leave ++ ret
   | T_Break -> jmp brk
   | T_Continue -> jmp ctn
-  | _ -> fail ()
 
 and compile_var dv =
   (match dv.t_dv_init with

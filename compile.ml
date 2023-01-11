@@ -108,6 +108,22 @@ and compile_expr expr =
     ++ (match op with Eq -> sete | Neq -> setne | Lt -> setl | Le -> setle | Gt -> setg | Ge -> setge | _ -> fail ()) !%al
     ++ movzbq !%al rax
 
+  | T_Binop(And as op, e1, e2)
+  | T_Binop (Or as op, e1, e2) ->
+    let id = new_control () in
+    let skip_andor, jumper = match op with
+      | And -> (Format.sprintf "and_skip_%d" id), je
+      | Or -> (Format.sprintf "or_skip_%d" id), jne
+      | _ -> fail() in
+    compile_expr e1
+    ++ testq !%rax !%rax
+    ++ jumper skip_andor
+    ++ compile_expr e2
+    ++ label skip_andor
+    ++ testq !%rax !%rax
+    ++ setne !%al
+    ++ movzbq !%al rax
+
   | T_Assign (e1, e2) ->
     compile_expr e2
     ++ pushq !%rax (* On sauvegarde le calcul du 2e terme *)

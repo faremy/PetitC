@@ -118,7 +118,20 @@ let rec compile_stmt brk ctn = function
     ++ jne lab_body
     ++ label lab_break
   
-  | T_Cond (cond, body_if, body_else) -> fail ()
+  | T_Cond (cond, body_if, body_else) ->
+    let id = new_control () in
+    let skip_if = Format.sprintf "if_skip_%d" id
+    and skip_else = Format.sprintf "else_skip_%d" id
+    in
+
+    compile_expr cond
+    ++ testq !%rax !%rax
+    ++ je skip_if
+    ++ compile_stmt brk ctn body_if
+    ++ jmp skip_else
+    ++ label skip_if
+    ++ compile_stmt brk ctn body_else
+    ++ label skip_else
 
   | T_Return e -> (match e with None -> nop | Some v -> compile_expr v) ++ leave ++ ret
   | T_Break -> jmp brk

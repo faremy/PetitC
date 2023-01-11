@@ -133,7 +133,6 @@ and compile_expr cur_depth expr =
     ++ movq !%rbx (ind rax)
     ++ movq !%rbx !%rax (* a = b renvoie la valeur de a après assignation, c'est à dire la valeur de b *)
   | T_Sizeof _ -> movq (imm 8) !%rax
-  | _ -> fail ()
 
 let rec compile_stmt cur_depth brk ctn = function
   | T_Expr e -> compile_expr cur_depth e
@@ -211,14 +210,11 @@ let compile_fct f = match f.t_df_id.name with
   | "f_2_putchar" -> stack_aligner "putchar"
   | _ -> real_fct f
 
-let compile_prog prog funs main_id =
-  let tx = ref (globl "main") in
-  List.iter (fun f -> tx := !tx ++ label f.t_df_id.name ++ compile_fct f) funs;
-  tx := !tx ++ label "main" ++ call main_id ++ movq (imm 0) !%rax ++ ret;
-  let p =
-    {
-      text = !tx;
-      data = nop
-    }
-  in
-  p
+let compile_prog funs main_id =
+  let tx = globl "main" ++
+  List.fold_left (fun code f -> code ++ label f.t_df_id.name ++ compile_fct f) nop funs
+  ++ label "main" ++ call main_id ++ movq (imm 0) !%rax ++ ret in
+  {
+    text = tx;
+    data = nop
+  }

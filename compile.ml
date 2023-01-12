@@ -28,7 +28,7 @@ and compile_expr cur_depth expr =
   | T_Ident _ -> compile_lvalue cur_depth expr ++ movq (ind rax) !%rax
   | T_Call (id, args) ->
     List.fold_left (fun code e -> compile_expr cur_depth e ++ pushq !%rax ++ code) nop args
-    ++ rewind_rbp (cur_depth + 1 - id.f_depth)
+    ++ rewind_rbp (cur_depth + 1 - id.f_depth) (* On trouve le rbp parent de la fonction appelée *)
     ++ pushq !%rax
     ++ call id.name
     ++ popn (8 * (1 + List.length args))

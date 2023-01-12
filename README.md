@@ -112,10 +112,28 @@ Quand on déclare une fonction, on l'ajoute à l'environnement **avant** de la t
 
 ## Registres utilisés
 Pour limiter le nombre d'opérations sur la pile, le résultat d'une expression se trouve dans `%rax`. C'est aussi le registre
-utilisé pour les valeurs de retours de fonction.
+utilisé pour les valeurs de retour de fonction.
 Le registre `%rbx` ne sert qu'à stocker le deuxième opérande des opérations binaires.
 Le registre `%rdx` ne sert que pour les divisions euclidiennes, car il est utilisé par l'opération assembleur `idivq`.
 
 ## `compile_lvalue`
 
-asdsok
+Cette fonction sert à récupérer, dans `%rax`, l'adresse mémoire d'une expression qui est une valeur gauche, sans accéder 
+directement à la valeur de l'expression. Ceci sert pour les opérateurs `&`, `++`, `--` et `=`.
+
+## Utilisation des étiquettes
+
+Trois structures créent des étiquettes :
+- les opérateurs binaires `&&` et `||` créent une étiquette, utilisée pour ignorer l'évaluation du deuxième opérande si le
+résultat est connu après celle du premier. Il y a une symétrie entre les deux cas, ce qui permet de les traîter en même temps.
+
+- les conditions créent deux étiquettes, une pour ignorer le bloc `if` et la deuxième pour ignorer le bloc `else`.
+
+- les boucles créent quatre étiquettes
+ -- une première au début du corps de la boucle, une deuxième entre le corps et les expressions calculées à chaque pas (utilisé par `continue`), une troisième entre ces expressions et la condition (on y saute au début, puis un saut conditionnel est fait vers le premier label, permettant une structure plus linéaire avec moins de
+sauts), et 
+
+## `rewind_rbp`
+
+Puisque les profondeurs d'imbrication sont connues depuis le typage, il suffit d'écrire le bon nombre de fois une instruction
+qui remonte au `%rbp` du parent. `rewind_rbp n` remonte de `n` étages, et le `%rbp` atteint est stocké dans `%rax`.

@@ -65,9 +65,8 @@ avec un environnement sur un type somme quand nous nous sommes rendu compte qu'u
 (ou vice-versa) et qu'on ne saurait pas déterminer qui masque qui autrement.
 
 Les étiquettes sont des informations qui seront utiles lors de la production de code :
-- pour une fonction, un label de la forme `f_n_nom` où `n` est un identifiant numérique unique pour chaque fonction attribué
-dans l'ordre d'apparition dans le programme (variable `nbfuns` dans `typer.ml`), et `nom` est le nom initial de la fonction.
-On conserve aussi sa profondeur d'imbrication (utile uniquement pour le debug).
+- pour une fonction, une étiquette de la forme `f_n_nom` où `n` est un identifiant numérique unique pour chaque fonction attribué dans l'ordre d'apparition dans le programme (variable `nbfuns` dans `typer.ml`), et `nom` est le nom initial de la fonction.
+On conserve aussi sa profondeur d'imbrication.
 
 - pour une variable, sa position dans le tableau d'appel de la fonction dans laquelle elle est déclarée, et la profondeur d'imbrication de cette fonction. Le nom de la variable est oublié car il ne nous sera plus utile par la suite.
 
@@ -130,8 +129,14 @@ résultat est connu après celle du premier. Il y a une symétrie entre les deux
 - les conditions créent deux étiquettes, une pour ignorer le bloc `if` et la deuxième pour ignorer le bloc `else`.
 
 - les boucles créent quatre étiquettes
- -- une première au début du corps de la boucle, une deuxième entre le corps et les expressions calculées à chaque pas (utilisé par `continue`), une troisième entre ces expressions et la condition (on y saute au début, puis un saut conditionnel est fait vers le premier label, permettant une structure plus linéaire avec moins de
-sauts), et 
+	- une première au début du corps de la boucle
+	- une deuxième entre le corps et les expressions calculées à chaque pas : utilisée par `continue`
+	- une troisième entre ces expressions et la condition : on y saute au début, puis un saut conditionnel est fait vers le
+	premier label, permettant une structure plus linéaire avec moins de sauts
+	- un quatrième label à la fin : utilisé par `break`
+
+Chaque étiquette contient, entre autres, un identifiant numérique unique, attribués dans l'ordre de rencontre lors de la
+compilation.
 
 ## `rewind_rbp`
 

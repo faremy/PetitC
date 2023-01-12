@@ -58,7 +58,7 @@ and compile_expr cur_depth expr =
 
   | T_Binop (Plus, e1, e2) ->
     compile_expr cur_depth e2
-    ++ pushq !%rax (* On sauvegarde le calcul du 2e terme *)
+    ++ pushq !%rax (* On sauvegarde le calcul du 2e opérande *)
     ++ compile_expr cur_depth e1
     ++ popq rbx
     ++ (match Typer.be2 e1 e2 with
@@ -69,7 +69,7 @@ and compile_expr cur_depth expr =
 
   | T_Binop (Minus, e1, e2) ->
     compile_expr cur_depth e2
-    ++ pushq !%rax (* On sauvegarde le calcul du 2e terme *)
+    ++ pushq !%rax (* On sauvegarde le calcul du 2e opérande *)
     ++ compile_expr cur_depth e1
     ++ popq rbx
     ++ (match Typer.be2 e1 e2 with
@@ -80,7 +80,7 @@ and compile_expr cur_depth expr =
 
   | T_Binop (Mul, e1, e2) -> 
     compile_expr cur_depth e2
-    ++ pushq !%rax (* On sauvegarde le calcul du 2e terme *)
+    ++ pushq !%rax (* On sauvegarde le calcul du 2e opérande *)
     ++ compile_expr cur_depth e1
     ++ popq rbx
     ++ imulq !%rbx !%rax
@@ -88,7 +88,7 @@ and compile_expr cur_depth expr =
   | T_Binop (Div as op, e1, e2)
   | T_Binop (Mod as op, e1, e2) ->
     compile_expr cur_depth e2
-    ++ pushq !%rax (* On sauvegarde le calcul du 2e terme *)
+    ++ pushq !%rax (* On sauvegarde le calcul du 2e opérande *)
     ++ compile_expr cur_depth e1
     ++ popq rbx
     ++ cqto
@@ -115,7 +115,7 @@ and compile_expr cur_depth expr =
     let skip_andor, jumper = match op with
       | And -> (Format.sprintf "and_skip_%d" id), je
       | Or -> (Format.sprintf "or_skip_%d" id), jne
-      | _ -> fail() in
+      | _ -> fail () in
     compile_expr cur_depth e1
     ++ testq !%rax !%rax
     ++ jumper skip_andor
@@ -127,7 +127,7 @@ and compile_expr cur_depth expr =
 
   | T_Assign (e1, e2) ->
     compile_expr cur_depth e2
-    ++ pushq !%rax (* On sauvegarde le calcul du 2e terme *)
+    ++ pushq !%rax (* On sauvegarde le calcul du 2e opérande *)
     ++ compile_lvalue cur_depth e1
     ++ popq rbx
     ++ movq !%rbx (ind rax)

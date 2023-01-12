@@ -5,9 +5,9 @@
 
 ## État du projet
 
-- Notre typeur est fonctionnel avec nested (172/172).
+- Toutes les parties du compilateur sont fonctionnelles, et supportent les fonctions imbriquées.
+- Résultats des tests : 217/217 à la syntaxe, 172/172 au typage, 81/81 à la production de code.
 - Les messages d'erreur de typage sont les plus précis possibles (localisation et nature du problème).
-- Nous avons aussi anticipé "au maximum" la production de code (le typeur s'occupe notamment de calculer les offset des variables), ce que vous pouvez constater avec l'option `--debug-alloc`.
 
 ## Instructions
 
@@ -76,7 +76,7 @@ La fonction `type_prog` renvoie l'AST typé, utile pour le debug. Elle génère 
 les déclarations de fonctions du programme (y compris celles imbriquées), triées par ordre d'apparition : c'est celle là
 qui nous intéressera lors de la production de code.
 
-## Le cas spécial type_block
+## Le cas spécial `type_block`
 
 ### Arguments persistants, variables mutables
 
@@ -96,7 +96,7 @@ En effet, la persistance est utile uniquement quand on rentre dans un sous-bloc 
 
 Cela évite de devoir faire rentrer et ressortir les environnements dans `type_decl`. Ainsi `type_decl` est du type `decl -> t_decl` au lieu de `tenv -> Sset.t -> decl -> tenv * Sset.t * t_decl` et elle modifie les références du bloc courant. Cela a grandement allégé le code.
 
-### block_env
+### `block_env`
 
 En plus d'un environnement classique, on a `block_env` qui est l'ensemble (mutable) des identifiants qui ne peuvent pas être réutilisés : les variables du bloc courant. Les sous-blocs ne le modifient pas car ils "voient" une autre référence.
 
@@ -111,4 +111,11 @@ Quand on déclare une fonction, on l'ajoute à l'environnement **avant** de la t
 # Production de code
 
 ## Registres utilisés
-Pour limiter le nombre d'ajouts sur la pile, le résultat d'une expression se trouve dans `%rax`.
+Pour limiter le nombre d'opérations sur la pile, le résultat d'une expression se trouve dans `%rax`. C'est aussi le registre
+utilisé pour les valeurs de retours de fonction.
+Le registre `%rbx` ne sert qu'à stocker le deuxième opérande des opérations binaires.
+Le registre `%rdx` ne sert que pour les divisions euclidiennes, car il est utilisé par l'opération assembleur `idivq`.
+
+## `compile_lvalue`
+
+asdsok

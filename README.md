@@ -109,6 +109,10 @@ Quand on déclare une fonction, on l'ajoute à l'environnement **avant** de la t
 
 # Production de code
 
+Notre code compile toutes les fonctions du programme dans l'ordre de la liste `funs` produite par le typeur, et non en
+suivant l'AST typé (qui est quand même renvoyé par le typeur à des fins de debug). Les déclarations imbriquées de fonctions
+sont donc ignorées, et toutes les fonctions sont compilées comme des fonctions globales.
+
 ## Registres utilisés
 Pour limiter le nombre d'opérations sur la pile, le résultat d'une expression se trouve dans `%rax`. C'est aussi le registre
 utilisé pour les valeurs de retour de fonction.

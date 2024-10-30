@@ -1,8 +1,5 @@
 # PetitC
 
-- Rémy KIMBROUGH
-- Hugo PEYRAUD-MAGNIN
-
 ## État du projet
 
 - Toutes les parties du compilateur sont fonctionnelles, et supportent les fonctions imbriquées.
